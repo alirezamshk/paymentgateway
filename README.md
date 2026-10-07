@@ -1,66 +1,84 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Tech-Kala Payment Service
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Central, multi-tenant payment gateway for `tech-kala.com`. External sites (**Clients**) create
+payments through a signed REST API. Tech-Kala picks the Client's **Merchant**, talks to the
+**PSP** through a pluggable adapter, verifies the result with the PSP, and notifies the Client
+by signed webhook.
 
-## About Laravel
+```
+Client site ──HMAC API──▶ Tech-Kala ──▶ Merchant ──▶ Gateway adapter ──▶ PSP
+                             ▲                                            │
+                             └──── callback → verify with PSP ◀───────────┘
+Client site ◀── signed webhook (queued, retried) ─── Tech-Kala
+```
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+This is an independent system. It has no runtime, database or redirect dependency on any
+legacy payment system.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Stack
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+PHP 8.2+ · Laravel 11 · MySQL/MariaDB · Redis (cache, nonces, queue) · PHPUnit
 
-## Learning Laravel
+## Documentation
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+| Document | Contents |
+|----------|----------|
+| [docs/INTEGRATION.md](docs/INTEGRATION.md) | For client sites: signing requests, creating payments, verifying webhooks (PHP/Node samples) |
+| [docs/openapi.yaml](docs/openapi.yaml) | OpenAPI 3.1 reference: auth, payments, merchants, callbacks, webhooks, errors, idempotency |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Module layout, state machine, concurrency model, money convention, adding a PSP |
+| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Production setup: database, migrations, queue worker, scheduler, Redis, HTTPS, backups, logs |
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+## Quick start (local)
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+```bash
+composer install
+cp .env.example .env
+php artisan key:generate
+# Local overrides in .env:
+#   APP_ENV=local  APP_URL=http://127.0.0.1:8000  DB_CONNECTION=sqlite
+#   CACHE_STORE=database  QUEUE_CONNECTION=sync  PAYMENTS_NONCE_STORE=database
+#   GATEWAY_SANDBOX_ENABLED=true  PAYMENTS_ALLOW_INSECURE_URLS=true  SESSION_SECURE_COOKIE=false
+touch database/database.sqlite
+php artisan migrate --seed            # creates tables + gateway providers
 
-## Laravel Sponsors
+php artisan admin:create you@example.com          # admin panel user (prompts for password)
+php artisan client:create "Panel A" panel-a \
+  --webhook-url=https://panel-a.example.com/hooks/tk \
+  --return-url=https://panel-a.example.com/payment/result   # prints API key + secrets once
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+php artisan serve
+```
 
-### Premium Partners
+Admin panel: `http://127.0.0.1:8000/admin`. Add a merchant for the client there. The
+**Sandbox** provider needs no credentials and simulates a PSP, so you can run the whole flow
+locally.
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+## Tests
 
-## Contributing
+```bash
+php artisan test         # unit + feature suite (SQLite in memory)
+vendor/bin/pint --test   # code style
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+The suite covers signing, the state machine, idempotency, merchant selection, tenant isolation
+and IDOR, replay and timestamp attacks, rate limiting, duplicate and concurrent callbacks,
+webhook signing, retry and backoff, the admin panel, and every PSP adapter (against faked PSP
+HTTP responses).
 
-## Code of Conduct
+## Provider status
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+| Provider | Adapter | Settlement | Automated tests | Verified against real PSP |
+|----------|---------|------------|-----------------|---------------------------|
+| ZarinPal (REST v4) | `ZarinPalGateway` | not required | yes (faked HTTP) | **no** |
+| Sepehr / Saderat | `SepehrGateway` | not required (Advice) | yes (faked HTTP) | **no** |
+| Asan Pardakht (IPG REST v1) | `AsanPardakhtGateway` | yes (`/v1/Settlement`) | yes (faked HTTP) | **no** |
+| Sepordeh | `SepordehGateway` | not required | yes (faked HTTP) | **no** |
+| Sandbox (internal) | `SandboxGateway` | - | yes (end-to-end) | n/a |
 
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+> **None of the PSP integrations is production-ready yet.** Each adapter follows the PSP's
+> published API and is covered by automated tests, but none has been run against the real PSP
+> sandbox or production environment. Before you enable a provider (they are seeded as
+> *disabled*), run a real test transaction with that PSP's test credentials. Endpoints can be
+> overridden per provider in the admin panel (`Providers → Configure`) without code changes.
+> Sepordeh's API details in particular (amount unit, callback parameter names) must be
+> confirmed against its current documentation.

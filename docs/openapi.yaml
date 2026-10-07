@@ -1,0 +1,578 @@
+openapi: 3.1.0
+info:
+  title: Tech-Kala Payment Service API
+  version: 1.0.0
+  description: |
+    Central payment service for external sites ("Clients"). A Client creates payments
+    through this API; Tech-Kala selects the Client's Merchant, talks to the PSP, verifies
+    the result with the PSP and notifies the Client by webhook.
+
+    ## Authentication (HMAC-SHA256)
+
+    Every request to `/api/v1/payments*` and `/api/v1/merchants*` must carry:
+
+    | Header        | Value |
+    |---------------|-------|
+    | `X-Client-Id` | Credential key id (`tkc_...`) issued by Tech-Kala |
+    | `X-Timestamp` | Unix time in seconds. Must be within ±300s of server time |
+    | `X-Nonce`     | 16-64 chars `[A-Za-z0-9_-]`, unique per request (replays are rejected) |
+    | `X-Signature` | Lowercase hex `HMAC-SHA256(client_secret, canonical)` |
+
+    ```
+    canonical = METHOD + "\n"
+              + PATH + "\n"            # e.g. /api/v1/payments  (+ "?" + raw query string if any)
+              + X-Timestamp + "\n"
+              + X-Nonce + "\n"
+              + hex(SHA256(raw request body))   # SHA256 of "" for empty bodies
+    ```
+
+    The body must be sent byte-for-byte as signed. `Referer`, `Origin` and `User-Agent` are
+    never used for authentication. The client id is always derived from the credential - a
+    `client_id` in the body is ignored.
+
+    ## Money
+
+    `amount` is an **integer** in the unit of `currency`:
+    `IRR` = Rial, `IRT` = Toman (1 Toman = 10 Rial). Floats and numeric strings are rejected.
+    Tech-Kala never changes the currency of a payment. When a PSP needs a different unit
+    the conversion is exact or the attempt fails with `AMOUNT_NOT_CONVERTIBLE`.
+
+    ## Idempotency
+
+    * `(client, order_id)` is unique. Repeating a create request with identical parameters
+      returns the existing payment (`200`). Different parameters for the same `order_id`
+      return `409 ORDER_ALREADY_EXISTS`.
+    * Optional `Idempotency-Key` header (8-255 chars). Replays with the same key and body
+      return the original payment; the same key with a different body returns
+      `422 IDEMPOTENCY_KEY_REUSED`.
+    * A new PSP attempt for a **failed** payment must be requested explicitly with
+      `"new_attempt": true`.
+
+    ## Payment lifecycle
+
+    `created → pending → redirected → callback_received → verifying → paid | failed`
+    plus `cancelled` and `expired`. `paid`, `cancelled` and `expired` are terminal.
+    A payment is only `paid` after the PSP's verify/advice call confirms it.
+
+    ## Errors
+
+    All errors use the same shape and carry the request id (also in `X-Request-Id`).
+  contact:
+    name: Tech-Kala
+servers:
+  - url: https://tech-kala.com
+security:
+  - hmac: []
+
+tags:
+  - name: Payments
+  - name: Merchants
+  - name: Callbacks
+  - name: Webhooks
+
+paths:
+  /api/v1/payments:
+    post:
+      tags: [Payments]
+      summary: Create a payment
+      description: |
+        Authenticates the client, picks the merchant (`merchant_id` if given and owned by the
+        client, otherwise the client's default merchant), asks the PSP for a token and returns
+        the Tech-Kala payment page URL. The payment is never marked paid here.
+      operationId: createPayment
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreatePaymentRequest' }
+            examples:
+              default:
+                value:
+                  order_id: ORD-10001
+                  amount: 500000
+                  currency: IRR
+                  description: Service purchase
+                  return_url: https://panel-a.example.com/payment/result
+              explicitMerchant:
+                value:
+                  order_id: ORD-10002
+                  amount: 50000
+                  currency: IRT
+                  merchant_id: mer_01jabcdefghjkmnpqrstvwxyz0
+              newAttempt:
+                summary: Retry a failed payment with a new PSP attempt
+                value:
+                  order_id: ORD-10001
+                  amount: 500000
+                  currency: IRR
+                  new_attempt: true
+      responses:
+        '201':
+          description: Payment created (or new attempt started)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Payment' }
+              examples:
+                pending: { $ref: '#/components/examples/PendingPayment' }
+        '200':
+          description: Idempotent replay - existing payment returned
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Payment' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /api/v1/payments/{payment_id}:
+    get:
+      tags: [Payments]
+      summary: Get a payment
+      description: Returns `404 PAYMENT_NOT_FOUND` for unknown payments and for payments of other clients.
+      operationId: getPayment
+      parameters: [{ $ref: '#/components/parameters/PaymentId' }]
+      responses:
+        '200':
+          description: Payment
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Payment' }
+              examples:
+                paid: { $ref: '#/components/examples/PaidPayment' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/v1/payments/{payment_id}/verify:
+    post:
+      tags: [Payments]
+      summary: Verify a payment with the PSP
+      description: |
+        Returns the authoritative status. If the PSP callback has been received but
+        verification has not completed (e.g. PSP timeout), Tech-Kala re-runs verification
+        with the PSP. Final payments are returned unchanged; payments without a callback are
+        returned as-is. Safe to call repeatedly and concurrently.
+      operationId: verifyPayment
+      parameters: [{ $ref: '#/components/parameters/PaymentId' }]
+      responses:
+        '200':
+          description: Current payment state
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Payment' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/v1/payments/{payment_id}/cancel:
+    post:
+      tags: [Payments]
+      summary: Cancel an unpaid payment
+      description: Allowed in `created`, `pending` and `redirected`. Otherwise `409 PAYMENT_NOT_CANCELLABLE`.
+      operationId: cancelPayment
+      parameters: [{ $ref: '#/components/parameters/PaymentId' }]
+      responses:
+        '200':
+          description: Cancelled payment
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Payment' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /api/v1/merchants:
+    get:
+      tags: [Merchants]
+      summary: List the client's merchants
+      operationId: listMerchants
+      responses:
+        '200':
+          description: Merchants (credentials are never returned)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Merchant' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      tags: [Merchants]
+      summary: Create a merchant
+      description: |
+        Credentials are validated against what the provider needs and stored encrypted.
+        The client's first merchant becomes its default automatically.
+
+        | provider       | required credentials |
+        |----------------|----------------------|
+        | `zarinpal`     | `merchant_identifier` (36-char merchant_id) |
+        | `sepehr`       | `terminal_identifier` |
+        | `asanpardakht` | `merchant_identifier` (merchantConfigurationId), `username`, `password` |
+        | `sepordeh`     | `merchant_identifier` (merchant key) |
+      operationId: createMerchant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MerchantRequest' }
+            example:
+              name: Main AsanPardakht terminal
+              provider: asanpardakht
+              credentials:
+                merchant_identifier: '270'
+                username: my-user
+                password: my-password
+              is_default: true
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Merchant' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  /api/v1/merchants/{merchant_id}:
+    get:
+      tags: [Merchants]
+      summary: Get a merchant
+      operationId: getMerchant
+      parameters: [{ $ref: '#/components/parameters/MerchantId' }]
+      responses:
+        '200':
+          description: Merchant
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Merchant' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [Merchants]
+      summary: Update a merchant
+      description: Omitted or empty credential keys keep their current (secret) value.
+      operationId: updateMerchant
+      parameters: [{ $ref: '#/components/parameters/MerchantId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MerchantRequest' }
+            example: { name: Renamed, is_default: true }
+      responses:
+        '200':
+          description: Updated merchant
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Merchant' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  /api/v1/gateways/{provider}/callback/{payment_id}:
+    get:
+      tags: [Callbacks]
+      summary: PSP return/callback (customer browser)
+      security: []
+      description: |
+        PSPs send the customer back here. Tech-Kala records the raw callback (masked),
+        checks it matches the issued authority/token/invoice, claims verification under a
+        row lock, calls the PSP verify API, finalizes the payment, queues the webhook and
+        redirects (303) to the payment's `return_url` with
+        `?payment_id=...&order_id=...&status=...`.
+
+        **The redirect parameters are informational only.** Confirm the result with
+        `GET /api/v1/payments/{payment_id}` or the signed webhook.
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema: { type: string, enum: [zarinpal, sepehr, asanpardakht, sepordeh] }
+        - $ref: '#/components/parameters/PaymentId'
+      responses:
+        '303': { description: Redirect to the client return URL }
+        '404': { description: Unknown payment (HTML page) }
+    post:
+      tags: [Callbacks]
+      summary: PSP return/callback (form POST)
+      security: []
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema: { type: string }
+        - $ref: '#/components/parameters/PaymentId'
+      responses:
+        '303': { description: Redirect to the client return URL }
+
+  /pay/{payment_id}:
+    get:
+      tags: [Payments]
+      summary: Customer payment page
+      security: []
+      description: HTML page showing site name, amount, description and status, then forwarding the customer to the PSP.
+      parameters: [{ $ref: '#/components/parameters/PaymentId' }]
+      responses:
+        '200': { description: HTML page }
+        '404': { description: Unknown payment }
+
+webhooks:
+  paymentEvent:
+    post:
+      tags: [Webhooks]
+      summary: Payment event sent to the client's webhook URL
+      description: |
+        Sent for `payment.created`, `payment.pending`, `payment.succeeded`, `payment.failed`,
+        `payment.expired`, `payment.cancelled`.
+
+        **Verify every webhook:**
+
+        ```
+        expected = hex(HMAC-SHA256(webhook_secret, X-TK-Timestamp + "." + raw_body))
+        constant_time_equals(expected, X-TK-Signature) and |now - X-TK-Timestamp| <= 300
+        ```
+
+        Respond with any `2xx` within 10 seconds. Non-2xx / timeouts are retried with
+        exponential backoff (30s, 60s, 120s, ... capped at 6h, 8 attempts by default), after
+        which the delivery is marked failed and can be retried from the admin panel.
+        Deliveries can repeat - de-duplicate on `X-TK-Delivery-Id`. Payment status never
+        depends on webhook delivery.
+      parameters:
+        - { name: X-TK-Event, in: header, required: true, schema: { type: string }, example: payment.succeeded }
+        - { name: X-TK-Delivery-Id, in: header, required: true, schema: { type: string }, example: whd_01jabcdefghjkmnpqrstvwxyz0 }
+        - { name: X-TK-Timestamp, in: header, required: true, schema: { type: string }, example: '1791455400' }
+        - { name: X-TK-Signature, in: header, required: true, schema: { type: string } }
+        - { name: X-Request-Id, in: header, required: false, schema: { type: string } }
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/WebhookEvent' }
+            example:
+              event: payment.succeeded
+              payment_id: pay_01jabcdefghjkmnpqrstvwxyz0
+              order_id: ORD-10001
+              amount: 500000
+              currency: IRR
+              status: paid
+              reference_number: '123456789'
+              card_mask: 603799******1234
+              paid_at: '2026-10-08T10:30:00Z'
+              occurred_at: '2026-10-08T10:30:01Z'
+      responses:
+        '200': { description: Acknowledged }
+
+components:
+  securitySchemes:
+    hmac:
+      type: apiKey
+      in: header
+      name: X-Signature
+      description: HMAC-SHA256 request signature. Requires X-Client-Id, X-Timestamp and X-Nonce as well.
+
+  parameters:
+    PaymentId:
+      name: payment_id
+      in: path
+      required: true
+      schema: { type: string, pattern: '^pay_[0-9a-z]{26}$' }
+    MerchantId:
+      name: merchant_id
+      in: path
+      required: true
+      schema: { type: string, pattern: '^mer_[0-9a-z]{26}$' }
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      schema: { type: string, pattern: '^[A-Za-z0-9_\-:.]{8,255}$' }
+
+  schemas:
+    Currency:
+      type: string
+      enum: [IRR, IRT]
+      description: IRR = Rial, IRT = Toman. Amounts are integers in this unit.
+    PaymentStatus:
+      type: string
+      enum: [created, pending, redirected, callback_received, verifying, paid, failed, cancelled, expired]
+    CreatePaymentRequest:
+      type: object
+      required: [order_id, amount]
+      additionalProperties: false
+      properties:
+        order_id: { type: string, maxLength: 100, pattern: '^[A-Za-z0-9._:\-]+$' }
+        amount:
+          type: integer
+          description: 'Integer in the currency unit. IRR: 10,000 - 2,000,000,000,000. IRT: 1,000 - 200,000,000,000.'
+        currency:
+          allOf: [{ $ref: '#/components/schemas/Currency' }]
+          default: IRR
+        description: { type: [string, 'null'], maxLength: 500 }
+        return_url:
+          type: [string, 'null']
+          format: uri
+          description: HTTPS URL. Defaults to the client's configured return URL.
+        merchant_id:
+          type: [string, 'null']
+          description: Use a specific merchant of this client. Defaults to the client's default merchant.
+        metadata:
+          type: [object, 'null']
+          description: Up to 20 keys / 4KB. Stored and returned as-is.
+        new_attempt:
+          type: boolean
+          description: Start a new PSP attempt for an existing failed payment with the same order_id.
+    Payment:
+      type: object
+      properties:
+        payment_id: { type: string, example: pay_01jabcdefghjkmnpqrstvwxyz0 }
+        order_id: { type: string }
+        amount: { type: integer }
+        currency: { $ref: '#/components/schemas/Currency' }
+        description: { type: [string, 'null'] }
+        status: { $ref: '#/components/schemas/PaymentStatus' }
+        payment_url:
+          type: [string, 'null']
+          description: Tech-Kala payment page. Only present while the payment can be paid.
+        merchant_id: { type: string }
+        provider: { type: string, example: zarinpal }
+        reference_number: { type: [string, 'null'], description: PSP reference (RRN / ref_id) once paid }
+        trace_number: { type: [string, 'null'] }
+        card_mask: { type: [string, 'null'], example: 603799******1234 }
+        return_url: { type: [string, 'null'] }
+        metadata: { type: [object, 'null'] }
+        attempts: { type: integer }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        paid_at: { type: [string, 'null'], format: date-time }
+        expires_at: { type: [string, 'null'], format: date-time }
+    MerchantRequest:
+      type: object
+      properties:
+        name: { type: string, maxLength: 255 }
+        provider: { type: string, enum: [zarinpal, sepehr, asanpardakht, sepordeh] }
+        credentials:
+          type: object
+          description: Standard keys merchant_identifier, terminal_identifier, username, password, api_key; any other key is stored in encrypted provider config.
+          additionalProperties: { type: string }
+        status: { type: string, enum: [active, disabled] }
+        is_default: { type: boolean }
+    Merchant:
+      type: object
+      properties:
+        merchant_id: { type: string }
+        name: { type: string }
+        provider: { type: string }
+        status: { type: string, enum: [active, disabled] }
+        is_default: { type: boolean }
+        configured_credentials:
+          type: array
+          items: { type: string }
+          description: Names of configured credential keys. Values are never returned.
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    WebhookEvent:
+      type: object
+      properties:
+        event: { type: string, enum: [payment.created, payment.pending, payment.succeeded, payment.failed, payment.expired, payment.cancelled] }
+        payment_id: { type: string }
+        order_id: { type: string }
+        amount: { type: integer }
+        currency: { $ref: '#/components/schemas/Currency' }
+        status: { $ref: '#/components/schemas/PaymentStatus' }
+        reference_number: { type: [string, 'null'] }
+        card_mask: { type: [string, 'null'] }
+        paid_at: { type: [string, 'null'], format: date-time }
+        occurred_at: { type: string, format: date-time }
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message, request_id]
+          properties:
+            code:
+              type: string
+              description: |
+                AUTH_REQUIRED, AUTH_INVALID, AUTH_INVALID_SIGNATURE, AUTH_TIMESTAMP_EXPIRED,
+                AUTH_NONCE_REPLAYED, AUTH_CLIENT_DISABLED, HTTPS_REQUIRED, RATE_LIMITED,
+                VALIDATION_ERROR, MERCHANT_NOT_FOUND, PROVIDER_UNAVAILABLE, PROVIDER_NOT_SUPPORTED,
+                INVALID_MERCHANT_CREDENTIALS, PAYMENT_NOT_FOUND, ORDER_ALREADY_EXISTS,
+                IDEMPOTENCY_KEY_REUSED, NEW_ATTEMPT_NOT_ALLOWED, ATTEMPT_IN_PROGRESS,
+                PAYMENT_NOT_CANCELLABLE, INVALID_STATE_TRANSITION, NOT_FOUND, INTERNAL_ERROR
+            message: { type: string }
+            request_id: { type: string, example: req_01jabcdefghjkmnpqrstvwxyz0 }
+            details: { type: object, description: Field errors (VALIDATION_ERROR) or extra context }
+
+  examples:
+    PendingPayment:
+      value:
+        payment_id: pay_01jabcdefghjkmnpqrstvwxyz0
+        order_id: ORD-10001
+        amount: 500000
+        currency: IRR
+        description: Service purchase
+        status: pending
+        payment_url: https://tech-kala.com/pay/pay_01jabcdefghjkmnpqrstvwxyz0
+        merchant_id: mer_01jabcdefghjkmnpqrstvwxyz0
+        provider: zarinpal
+        reference_number: null
+        trace_number: null
+        card_mask: null
+        return_url: https://panel-a.example.com/payment/result
+        metadata: null
+        attempts: 1
+        created_at: '2026-10-08T10:25:00Z'
+        updated_at: '2026-10-08T10:25:01Z'
+        paid_at: null
+        expires_at: '2026-10-08T11:25:00Z'
+    PaidPayment:
+      value:
+        payment_id: pay_01jabcdefghjkmnpqrstvwxyz0
+        order_id: ORD-10001
+        amount: 500000
+        currency: IRR
+        status: paid
+        payment_url: null
+        merchant_id: mer_01jabcdefghjkmnpqrstvwxyz0
+        provider: zarinpal
+        reference_number: '123456789'
+        trace_number: null
+        card_mask: 603799******1234
+        attempts: 1
+        paid_at: '2026-10-08T10:30:00Z'
+
+  responses:
+    Unauthorized:
+      description: Missing/invalid authentication
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { error: { code: AUTH_INVALID_SIGNATURE, message: The request signature is invalid., request_id: req_01jabcdefghjkmnpqrstvwxyz0 } }
+    Forbidden:
+      description: Client or credential disabled
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NotFound:
+      description: Not found (or owned by another client)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { error: { code: PAYMENT_NOT_FOUND, message: Payment not found., request_id: req_01jabcdefghjkmnpqrstvwxyz0 } }
+    Conflict:
+      description: Conflicts with existing state
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { error: { code: ORDER_ALREADY_EXISTS, message: A payment for this order_id already exists with different parameters., request_id: req_01jabcdefghjkmnpqrstvwxyz0 } }
+    Unprocessable:
+      description: Validation or business rule error
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { error: { code: MERCHANT_NOT_FOUND, message: No active default merchant is available for this client., request_id: req_01jabcdefghjkmnpqrstvwxyz0 } }
+    RateLimited:
+      description: Too many requests
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
