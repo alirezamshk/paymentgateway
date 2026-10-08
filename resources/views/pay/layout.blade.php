@@ -18,6 +18,10 @@
         .btn.secondary { background:var(--muted); margin-top:8px; }
         .status-paid { color:var(--ok); } .status-failed, .status-expired, .status-cancelled { color:var(--bad); }
         .muted { color:var(--muted); font-size:13px; }
+        .redirecting { text-align:center; }
+        .spinner { width:36px; height:36px; margin:8px auto 16px; border:3px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin .8s linear infinite; }
+        @keyframes spin { to { transform:rotate(360deg); } }
+        @media (prefers-reduced-motion: reduce) { .spinner { animation:none; } }
     </style>
 </head>
 <body>
