@@ -1,152 +1,344 @@
 # Installing on cPanel (shared hosting)
 
-This guide installs the service next to an existing website on the same cPanel account,
-without Redis or Supervisor.
+This is the procedure that was used to put the service live on `tech-kala.com`, next to an
+existing WordPress site on the same cPanel account (AlmaLinux, cPanel/WHM, MariaDB 10.11,
+PHP 7.4 default with EA-PHP 8.3 installed, DNS on Cloudflare). It needs no Redis and no
+Supervisor. Replace `USER` (the cPanel account, e.g. `techkala`) and the domain with your own.
 
-Two layouts are supported:
+Problems you may hit along the way are collected in [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
 
-| Layout | Public URL | Recommended |
-|--------|-----------|-------------|
-| **Subdomain** | `https://pay.example.com` | Yes. Cleanest: no conflicts with the main site's routes or `.htaccess`. |
-| **Sub-directory** | `https://example.com/payment` | Works. The main site must not use the `/payment` path. |
+## 0. Choose a layout
 
-In both cases the **project lives outside `public_html`**. Only its `public/` folder is
-exposed, so `.env`, the code and the logs are never reachable from the web.
+| Layout | Public URL | When |
+|--------|-----------|------|
+| **Sub-directory** | `https://example.com/payment` | Works without any DNS change. **Used in production.** |
+| **Subdomain** | `https://pay.example.com` | Cleanest, but needs a DNS record. If DNS is on Cloudflare, you need Cloudflare access. |
+
+In both cases the **project lives outside `public_html`** (`/home/USER/paymentgateway`), so
+`.env`, the code and the logs are never reachable from the web. Only a tiny front controller
+is exposed.
 
 ```
 /home/USER/
 ├── public_html/              ← main website (unchanged)
-│   └── payment  → symlink to ~/paymentgateway/public   (sub-directory layout only)
+│   └── payment/              ← sub-directory layout: only .htaccess + index.php
 └── paymentgateway/           ← this project
-    ├── public/               ← the only web-exposed folder
+    ├── public/               ← document root for the subdomain layout
     ├── .env
     └── ...
 ```
 
-## 1. PHP version and extensions
+## 1. Work as the account user, not root
 
-* **MultiPHP Manager**: set PHP **8.2 or newer** for the domain / subdomain.
-* **Select PHP Version** / **PHP Extensions** (CloudLinux) or EasyApache: enable `pdo_mysql`,
-  `mbstring`, `openssl`, `intl`, `sodium`, `curl`, `fileinfo`, `tokenizer`, `xml`, `ctype`.
-* In **Terminal** (or SSH), find the PHP CLI binary for that version, e.g.
-  `/opt/cpanel/ea-php83/root/usr/bin/php` or `/usr/local/bin/php`, and check it with `php -v`.
-  Use that full path below wherever `php` appears if the default `php` is older.
+If you log in to SSH as `root`, switch to the cPanel user before doing anything else. Files
+created by root cannot be written by the website (logs, cache) and break the app. cPanel users
+often have `noshell`, so give the shell explicitly:
 
-## 2. Database
+```bash
+su -s /bin/bash - USER
+```
 
-**MySQL Databases** → create a database (e.g. `USER_payments`) and a user with a strong
-password. Then **Add User To Database** with **ALL PRIVILEGES**.
+## 2. Use PHP 8.3 on the command line
+
+The server's default `php` may be older (here: 7.4). Laravel 11 needs 8.2+. Use the EA-PHP
+binary for this session:
+
+```bash
+ls /opt/cpanel/ | grep ea-php                        # which versions exist
+export PATH=/opt/cpanel/ea-php83/root/usr/bin:$HOME/bin:$PATH
+php -v                                               # must show 8.2+ (8.3.x)
+php -m | grep -ciE "^(dom|iconv|filter|hash|json|pcre|session)$"   # must print 7
+php -m | grep -iE "pdo_mysql|mbstring|openssl|curl|fileinfo|tokenizer|xml|ctype"
+```
+
+`intl` and `sodium` are **not** required. Run the `export PATH=...` line again in every new SSH
+session.
 
 ## 3. Get the code
-
-In **Terminal**:
 
 ```bash
 cd ~
 git clone -b claude/cool-mccarthy-ojh4ad https://github.com/alirezamshk/paymentgateway.git
 cd paymentgateway
+```
+
+## 4. Composer
+
+Some servers cannot reach `getcomposer.org` (connection timeout), and `allow_url_fopen` may
+be off. GitHub and Packagist usually still work, so download Composer from GitHub releases:
+
+```bash
+mkdir -p ~/bin
+curl -sSL -o ~/bin/composer https://github.com/composer/composer/releases/download/2.8.12/composer.phar
+chmod +x ~/bin/composer
+composer --version
 composer install --no-dev --optimize-autoloader
 ```
 
-* For a private repository, use **Git Version Control** in cPanel or clone with a GitHub
-  access token.
-* If `composer` is not on the PATH, try `/opt/cpanel/composer/bin/composer`.
-* Without Terminal access: run `composer install --no-dev` on your own computer, zip the
-  whole folder (including `vendor/`), upload it with **File Manager** to `/home/USER/`, and
-  extract it there.
+If Packagist is unreachable too (`curl -I https://repo.packagist.org/packages.json` fails),
+run `composer install --no-dev` on another machine and upload the project including `vendor/`.
 
-## 4. Configure `.env`
+## 5. Database
+
+In cPanel use **Database Wizard** (or **Manage My Databases**; older themes call it
+**MySQL Databases**):
+
+1. Create database `payments` → full name `USER_payments`.
+2. Create user `payuser` → full name `USER_payuser`.
+3. Grant **ALL PRIVILEGES** on the database to the user.
+
+Typing or pasting a generated password into a terminal prompt is error-prone (`Access
+denied` later). The reliable way is to let the server generate the password, set it with
+cPanel's `uapi`, and write it into `.env` in one go - see step 6.
+
+## 6. Configure `.env`
+
+As the account user, inside `~/paymentgateway`:
 
 ```bash
-cp .env.example .env
-php artisan key:generate
-```
-
-Edit `.env` (File Manager → Edit):
-
-```env
+cat > .env <<'EOF'
 APP_NAME="Tech-Kala Payments"
 APP_ENV=production
+APP_KEY=
 APP_DEBUG=false
-APP_URL=https://pay.example.com          # sub-directory layout: https://example.com/payment
+APP_TIMEZONE=UTC
+APP_URL=https://example.com/payment
+APP_LOCALE=en
+ADMIN_LOCALE=fa
+APP_FALLBACK_LOCALE=en
+APP_MAINTENANCE_DRIVER=file
+TRUSTED_PROXIES=
+
+LOG_CHANNEL=stack
+LOG_STACK=daily
+LOG_DAILY_DAYS=30
+LOG_LEVEL=info
 
 DB_CONNECTION=mysql
 DB_HOST=localhost
+DB_PORT=3306
 DB_DATABASE=USER_payments
 DB_USERNAME=USER_payuser
-DB_PASSWORD=...
+DB_PASSWORD=__SET_ME__
 
-# No Redis on most shared hosts: use the database for everything
-CACHE_STORE=database
 SESSION_DRIVER=database
-QUEUE_CONNECTION=database
-PAYMENTS_NONCE_STORE=database
-QUEUE_WORK_VIA_SCHEDULER=true            # cron runs the webhook queue worker every minute
+SESSION_LIFETIME=60
+SESSION_ENCRYPT=true
+SESSION_PATH=/payment
+SESSION_SECURE_COOKIE=true
+SESSION_HTTP_ONLY=true
+SESSION_SAME_SITE=strict
 
+CACHE_STORE=database
+CACHE_PREFIX=tkpay_
+QUEUE_CONNECTION=database
+QUEUE_WORK_VIA_SCHEDULER=true
+PAYMENTS_NONCE_STORE=database
+PAYMENTS_DEFAULT_CURRENCY=IRR
+PAYMENTS_ALLOW_INSECURE_URLS=false
+
+WEBHOOK_HEADER_PREFIX=X-Webhook-
 GATEWAY_SANDBOX_ENABLED=false
-ADMIN_LOCALE=fa                          # admin panel language: fa or en
+MAIL_MAILER=log
+EOF
+chmod 600 .env
+php artisan key:generate
 ```
 
-If the site is behind Cloudflare or another proxy, set `TRUSTED_PROXIES=*`. Otherwise
-HTTPS is not detected and API calls are rejected with `HTTPS_REQUIRED`.
+* Subdomain layout: `APP_URL=https://pay.example.com` and `SESSION_PATH=/`.
+* `QUEUE_WORK_VIA_SCHEDULER=true` lets cron run the webhook worker (no Supervisor needed).
+* If the site is proxied by Cloudflare (orange cloud), set `TRUSTED_PROXIES=*`, otherwise HTTPS
+  is not detected and API calls fail with `HTTPS_REQUIRED`.
 
-**Save a copy of `APP_KEY` somewhere safe** (a password manager). Without it, the stored
-secrets and PSP credentials cannot be decrypted.
+**Database password** - as **root** (exit the user shell first), generate, set and store it:
 
-## 5. Install the database and caches
+```bash
+cd /home/USER/paymentgateway
+NEWPW=$(openssl rand -hex 16)
+uapi --user=USER Mysql set_password user=USER_payuser password="$NEWPW" | grep -E "^ *(status|errors)" -A1   # status: 1
+sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD='$NEWPW'/" .env
+unset NEWPW
+chown USER:USER .env && chmod 600 .env
+su -s /bin/bash - USER
+```
+
+Back as the user:
+
+```bash
+cd ~/paymentgateway && export PATH=/opt/cpanel/ea-php83/root/usr/bin:$HOME/bin:$PATH
+php artisan db:show | head -8           # shows MariaDB/MySQL version and the database
+grep APP_KEY .env                       # store this value in a password manager
+```
+
+**Back up `APP_KEY`.** It encrypts client secrets, webhook secrets and PSP credentials;
+without it they cannot be recovered.
+
+## 7. Tables, admin user, caches
 
 ```bash
 php artisan migrate --force --seed
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
-php artisan admin:create you@example.com
+php artisan admin:create admin@example.com --name="Admin"    # asks for a 12+ char password
 chmod -R 775 storage bootstrap/cache
+php artisan config:cache && php artisan route:cache && php artisan view:cache
+php artisan about --only=environment     # PHP 8.3, production, debug OFF, correct URL
 ```
 
-## 6. Expose the `public/` folder
+## 8. Expose the application
 
-**Subdomain (recommended):** **Domains** (or **Subdomains**) → create `pay.example.com` and
-set its **Document Root** to `/home/USER/paymentgateway/public`.
+### Sub-directory (used in production)
 
-**Sub-directory:** in Terminal:
+The main site keeps its own PHP version (7.4 here). The folder gets **its own `.htaccess`
+with an EA-PHP 8.3 handler**, and a front controller that loads the project from outside
+`public_html`. A real folder is used rather than a symlink, so `FollowSymLinks` restrictions
+do not matter.
+
+Check first that the path is free and look at the main site's handler line:
 
 ```bash
-ln -s ~/paymentgateway/public ~/public_html/payment
+ls -ld ~/public_html/payment 2>/dev/null && echo "ALREADY EXISTS - choose another name"
+grep -n "AddHandler" ~/public_html/.htaccess
 ```
 
-If the host does not follow symlinks, create a folder `public_html/payment` instead, copy
-`public/.htaccess` and `public/index.php` into it, and edit the two `__DIR__.'/../...'` paths
-in that `index.php` to point at `/home/USER/paymentgateway/...`.
+Then create it (adjust `ea-php83` if the handler naming on your server differs):
 
-## 7. HTTPS
+```bash
+mkdir ~/public_html/payment
 
-**SSL/TLS Status** → run **AutoSSL** for the domain or subdomain. Open
-`https://pay.example.com/up`; it should return the health page.
+cat > ~/public_html/payment/.htaccess <<'EOF'
+# PHP 8.3 for the payment service only (the main site keeps its own version)
+<IfModule mime_module>
+  AddHandler application/x-httpd-ea-php83 .php .php8 .phtml
+</IfModule>
 
-## 8. Cron
+<IfModule mod_rewrite.c>
+    <IfModule mod_negotiation.c>
+        Options -MultiViews -Indexes
+    </IfModule>
+    RewriteEngine On
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_URI} (.+)/$
+    RewriteRule ^ %1 [L,R=301]
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^ index.php [L]
+</IfModule>
+EOF
 
-**Cron Jobs** → add, every minute (`* * * * *`):
+cat > ~/public_html/payment/index.php <<'EOF'
+<?php
 
+use Illuminate\Http\Request;
+
+define('LARAVEL_START', microtime(true));
+$base = '/home/USER/paymentgateway';
+
+if (file_exists($maintenance = $base.'/storage/framework/maintenance.php')) {
+    require $maintenance;
+}
+
+require $base.'/vendor/autoload.php';
+
+(require_once $base.'/bootstrap/app.php')->handleRequest(Request::capture());
+EOF
+
+chmod 755 ~/public_html/payment
+chmod 644 ~/public_html/payment/.htaccess ~/public_html/payment/index.php
 ```
-/usr/local/bin/php /home/USER/paymentgateway/artisan schedule:run >> /dev/null 2>&1
+
+The folder's own `RewriteEngine On` means WordPress's rewrite rules in the parent `.htaccess`
+do not apply inside it. `SESSION_PATH=/payment` keeps the admin cookies separate from the main
+site's cookies.
+
+### Subdomain
+
+1. **Domains → Create A New Domain**: `pay.example.com`, untick *Share document root*,
+   document root `paymentgateway/public`.
+2. **MultiPHP Manager**: set PHP 8.3 for the subdomain only.
+3. **DNS**: if the domain's nameservers are elsewhere (check with `dig +short NS example.com`,
+   e.g. `*.ns.cloudflare.com`), add `A pay → <server IP>` there (Cloudflare: *DNS only*, grey
+   cloud). cPanel's local zone is not used by the internet in that case, and AutoSSL fails
+   with *"does not resolve to any IP addresses"* until the record exists.
+4. **SSL/TLS Status → Run AutoSSL**.
+
+### Check
+
+```bash
+curl -sS -o /dev/null -w "up: %{http_code}\n"    https://example.com/payment/up
+curl -sS -o /dev/null -w "admin: %{http_code}\n" https://example.com/payment/admin/login
+curl -sS -o /dev/null -w "main site: %{http_code}\n" https://example.com/
 ```
 
-Use the PHP 8.2+ binary path from step 1. This single job expires old payments, re-verifies
-interrupted payments, and (with `QUEUE_WORK_VIA_SCHEDULER=true`) delivers webhooks.
+All three must be `200`.
 
-## 9. Verify
+## 9. Cron
 
-1. `https://pay.example.com/admin`: log in.
-2. **Providers**: everything is disabled except the sandbox, which is disabled in production
-   anyway.
-3. Create a client and a merchant, enable one provider, and run a low-value real payment
-   (see `DEPLOYMENT.md` → *Enabling a PSP*).
+As the user (keeps any existing jobs):
+
+```bash
+crontab -l 2>/dev/null
+(crontab -l 2>/dev/null; echo "* * * * * /opt/cpanel/ea-php83/root/usr/bin/php /home/USER/paymentgateway/artisan schedule:run >> /dev/null 2>&1") | crontab -
+crontab -l
+```
+
+Use the **full path of PHP 8.3** - cron does not use your `PATH`. Verify:
+
+```bash
+php artisan schedule:list          # payments:expire, payments:reconcile, webhooks:dispatch-due, queue:work
+php artisan schedule:run           # every line must end in DONE
+```
+
+and, as root, that cron really runs it every minute:
+
+```bash
+grep USER /var/log/cron | tail -3   # ... CMD (/opt/cpanel/ea-php83/... schedule:run ...)
+```
+
+## 10. First payment (smoke test)
+
+1. Admin panel `https://example.com/payment/admin` → **Providers**: enable the PSP you will
+   test (for ZarinPal keep `{"sandbox": true}` for a no-money test).
+2. **Clients → New client** (e.g. *Test Site*, return URL `https://example.com/`). Copy the
+   X-Client-Id (30 chars), client secret (69 chars) and webhook secret: they are shown once.
+3. On the client page **Add merchant** with the PSP credentials, mark it default, then
+   **Test credentials**.
+4. Create a payment with the bundled test client. On the server itself, load the newest
+   credential straight from the database to avoid copy/paste errors:
+
+```bash
+cd ~/paymentgateway
+export TK_BASE_URL=https://example.com/payment
+export TK_KEY_ID=$(php artisan tinker --execute='echo App\Models\ClientCredential::where("status","active")->latest("id")->value("key_id");')
+export TK_SECRET=$(php artisan tinker --execute='echo App\Models\ClientCredential::where("status","active")->latest("id")->first()->secret();')
+php scripts/test-client.php create          # expect HTTP 201 and "status": "pending"
+```
+
+5. Open the returned `payment_url` in a browser (VPN **off** - Shaparak gateways reject foreign
+   IPs), pay, and you are sent to the return URL with `status=paid`.
+6. Confirm the authoritative state (the redirect is only a hint):
+
+```bash
+php scripts/test-client.php status pay_...  # "status": "paid", reference_number set
+```
+
+7. In the admin panel open the payment: the **Timeline** shows every step
+   (created → gateway.requested → pending → redirected → callback → verifying → paid).
+
+If `status` is `failed` right after `create`, the PSP token request failed. See the reason:
+
+```bash
+php artisan tinker --execute='$a=App\Models\Payment::latest("id")->first()->latestAttempt; echo json_encode(["error_code"=>$a->error_code,"error_message"=>$a->error_message], JSON_UNESCAPED_UNICODE),"\n";'
+```
+
+and look it up in [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
 
 ## Updating
 
 ```bash
+su -s /bin/bash - USER            # if you are root
 cd ~/paymentgateway
+export PATH=/opt/cpanel/ea-php83/root/usr/bin:$HOME/bin:$PATH
 git pull
 composer install --no-dev --optimize-autoloader
 php artisan migrate --force
@@ -160,4 +352,5 @@ php artisan queue:restart
   folder, e.g. `/payment/api/v1/payments`.
 * Webhooks are delivered within about a minute of a payment changing state (cron
   granularity). Payment status itself is updated immediately.
-* Logs: `~/paymentgateway/storage/logs/`. The default `daily` channel keeps 30 days.
+* Logs: `~/paymentgateway/storage/logs/laravel-YYYY-MM-DD.log` (30 days kept).
+* Once the new service is live, disable any legacy payment scripts left in `public_html`.

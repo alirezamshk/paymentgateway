@@ -1,6 +1,7 @@
 # Deployment
 
 > On cPanel or other shared hosting, follow [CPANEL.md](CPANEL.md) instead.
+> Errors and fixes: [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
 
 ## Requirements
 
@@ -135,7 +136,10 @@ with them and/or a server IP to be whitelisted for API calls. Arrange this with 
 
 ## 8. Enabling a PSP
 
-1. Get test credentials from the PSP and register the callback domain with them.
+Per-PSP requirements and the lessons from going live are in [PROVIDERS.md](PROVIDERS.md).
+
+1. Get test credentials from the PSP, register the callback domain **and the server's IP**
+   with them, and check from the server that the PSP API answers (`curl`).
 2. In the admin panel, open **Providers → Configure** and set any non-secret settings
    (e.g. `{"sandbox": true}` for ZarinPal, or endpoint overrides).
 3. Create a merchant for a test client with the PSP credentials and use **Test credentials**.

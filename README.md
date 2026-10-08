@@ -44,6 +44,10 @@ PHP 8.2+ · Laravel 11 · MySQL/MariaDB · Redis (cache, nonces, queue) · PHPUn
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Module layout, state machine, concurrency model, money convention, adding a PSP |
 | [docs/CPANEL.md](docs/CPANEL.md) | Step-by-step install on cPanel / shared hosting (subdomain or sub-directory, no Redis/Supervisor) |
 | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Production setup: database, migrations, queue worker, scheduler, Redis, HTTPS, backups, logs |
+| [docs/PROVIDERS.md](docs/PROVIDERS.md) | Per-PSP notes: credentials, endpoints, requirements (IP registration, Referer), verified status |
+| [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | Errors met during installation and operation, with causes and fixes |
+| [docs/fa/README.md](docs/fa/README.md) | راهنمای فارسی: نصب، کار با پنل، اتصال سایت‌ها، خطاهای رایج |
+| [scripts/test-client.php](scripts/test-client.php) | Dependency-free client for smoke-testing a deployment (create / status / verify / cancel) |
 
 ## Quick start (local)
 

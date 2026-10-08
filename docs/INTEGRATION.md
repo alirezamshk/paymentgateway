@@ -30,6 +30,15 @@ Customer ◀── 303 redirect to your return_url?payment_id=..&order_id=..&sta
 The `status` in the return redirect is only a hint. Before delivering goods, confirm through
 the signed webhook or `GET /api/v1/payments/{payment_id}`.
 
+The service may be installed in a sub-directory, e.g. `https://tech-kala.com/payment`. Then
+every API path starts with that folder (`/payment/api/v1/payments`), and you sign that full
+path. Use the base URL you were given exactly.
+
+Customers must turn off VPNs before paying: Shaparak payment pages reject foreign IPs.
+
+A dependency-free reference client you can run from the command line is in
+[`scripts/test-client.php`](../scripts/test-client.php).
+
 ## 3. Signing requests
 
 ```
@@ -42,6 +51,8 @@ X-Signature = hex(hmac_sha256(client_secret, canonical))
   string, append `?` and the query string exactly as sent.
 * `TIMESTAMP` is Unix seconds. The server accepts ±300 seconds, so keep your clock in sync (NTP).
 * `NONCE` must be unique for every request (16-64 chars `[A-Za-z0-9_-]`).
+* The key id is 30 characters (`tkc_...`) and the secret 69 characters (`tksk_...`). Most
+  `AUTH_INVALID_SIGNATURE` errors are copy/paste mistakes; check the lengths first.
 * Sign the exact bytes you send as the body. For a `GET` request the body is empty.
 
 ### PHP
