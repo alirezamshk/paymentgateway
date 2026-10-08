@@ -54,6 +54,24 @@ Tech-Kala's administrator must register for this panel:
   CSRF-exempt, no login)
 * **Default return URL**, e.g. `https://<panel-domain>/payments/techkala/return` (GET, HTTPS)
 
+### Several gateways (optional)
+
+One panel = one Tech-Kala client: **one** Client ID / Secret, **one** Webhook Secret and **one**
+Webhook URL, no matter how many gateways it offers. Each gateway is a *merchant* (`mer_...`) that
+Tech-Kala adds under that same client. Do not ask for a second key pair per gateway.
+
+* `GET {BASE}/api/v1/merchants` lists them (`merchant_id`, `name`, `provider`, `is_default`,
+  `status`). Offer the active ones as choices (e.g. a "Gateway" select on the settings screen, or
+  let the customer pick on the invoice).
+* Send the chosen `"merchant_id": "mer_..."` in the create-payment body (section 3). Without it,
+  the client's default merchant is used.
+* Webhooks for every gateway arrive at the same URL, signed with the same secret; the payload's
+  `merchant_id` / `provider` tell you which gateway was used.
+* After a **failed** payment, `new_attempt: true` may carry a different `merchant_id` to retry on
+  another gateway (without `merchant_id` the retry uses the default merchant, so send it every
+  time). While a payment is still pending it cannot switch gateway; wait for it to fail or expire,
+  or create a new payment with a new `order_id` (e.g. `INV-1001-2`).
+
 ## 2. Authentication: signing every API request (HMAC-SHA256)
 
 Every request to `{BASE}/api/v1/...` must include four headers:
