@@ -18,10 +18,11 @@
         .btn.secondary { background:var(--muted); margin-top:8px; }
         .status-paid { color:var(--ok); } .status-failed, .status-expired, .status-cancelled { color:var(--bad); }
         .muted { color:var(--muted); font-size:13px; }
+        [hidden] { display:none !important; }
         .redirecting { text-align:center; }
-        .spinner { width:36px; height:36px; margin:8px auto 16px; border:3px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin .8s linear infinite; }
-        @keyframes spin { to { transform:rotate(360deg); } }
-        @media (prefers-reduced-motion: reduce) { .spinner { animation:none; } }
+        .sparkle { font-size:44px; line-height:1; height:52px; margin:8px auto 12px; color:#d97757; animation:pulse 1.2s ease-in-out infinite; }
+        @keyframes pulse { 0%, 100% { transform:scale(1); opacity:1; } 50% { transform:scale(.82); opacity:.7; } }
+        @media (prefers-reduced-motion: reduce) { .sparkle { animation:none; } }
     </style>
 </head>
 <body>

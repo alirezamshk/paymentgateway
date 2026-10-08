@@ -13,7 +13,7 @@
         {{-- Payable: hand the customer to the PSP immediately. The page itself must be served from
              this domain (PSPs such as Sepehr check the Referer) and POST-based PSPs need a form. --}}
         <div class="redirecting">
-            <div class="spinner" aria-hidden="true"></div>
+            <div class="sparkle" id="sparkle" aria-hidden="true">✻</div>
             <p>در حال انتقال به درگاه بانک...</p>
         </div>
         <form id="psp-form" method="{{ strtoupper($redirect->method) === 'POST' ? 'POST' : 'GET' }}" action="{{ $redirect->url }}">
@@ -41,6 +41,12 @@
 @section('scripts')
     @if($redirect && $nonce)
         <script nonce="{{ $nonce }}">
+            (function () {
+                var frames = ['·', '✢', '✳', '✶', '✻', '✽', '✻', '✶', '✳', '✢'], i = 0, el = document.getElementById('sparkle');
+                if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                    setInterval(function () { el.textContent = frames[i = (i + 1) % frames.length]; }, 110);
+                }
+            })();
             document.getElementById('psp-form').submit();
             setTimeout(function () { document.getElementById('psp-fallback').hidden = false; }, 3000);
         </script>
