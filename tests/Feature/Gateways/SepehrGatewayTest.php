@@ -27,8 +27,8 @@ class SepehrGatewayTest extends GatewayTestCase
     public function test_create_and_advice(): void
     {
         Http::fake([
-            'sepehr.shaparak.ir:8081/V1/PeymentApi/GetToken' => Http::response(['Status' => 0, 'Accesstoken' => 'tok-123']),
-            'sepehr.shaparak.ir:8081/V1/PeymentApi/Advice' => Http::response(['Status' => 'Ok', 'ReturnId' => '500000', 'Message' => 'ok']),
+            'sepehr.shaparak.ir/Rest/V1/PeymentApi/GetToken' => Http::response(['Status' => 0, 'Accesstoken' => 'tok-123']),
+            'sepehr.shaparak.ir/Rest/V1/PeymentApi/Advice' => Http::response(['Status' => 'Ok', 'ReturnId' => '500000', 'Message' => 'ok']),
             '*.example.com/*' => Http::response('', 200),
         ]);
 
@@ -59,7 +59,7 @@ class SepehrGatewayTest extends GatewayTestCase
     public function test_irt_payment_is_sent_in_rials(): void
     {
         Http::fake([
-            'sepehr.shaparak.ir:8081/V1/PeymentApi/GetToken' => Http::response(['Status' => 0, 'AccessToken' => 'tok']),
+            'sepehr.shaparak.ir/Rest/V1/PeymentApi/GetToken' => Http::response(['Status' => 0, 'AccessToken' => 'tok']),
             '*.example.com/*' => Http::response('', 200),
         ]);
 
@@ -71,7 +71,7 @@ class SepehrGatewayTest extends GatewayTestCase
     public function test_unsuccessful_respcode_fails_without_advice(): void
     {
         Http::fake([
-            'sepehr.shaparak.ir:8081/V1/PeymentApi/GetToken' => Http::response(['Status' => 0, 'AccessToken' => 'tok']),
+            'sepehr.shaparak.ir/Rest/V1/PeymentApi/GetToken' => Http::response(['Status' => 0, 'AccessToken' => 'tok']),
             '*.example.com/*' => Http::response('', 200),
         ]);
         $payment = $this->createPayment();
@@ -85,8 +85,8 @@ class SepehrGatewayTest extends GatewayTestCase
     public function test_amount_mismatch_in_advice_is_not_paid(): void
     {
         Http::fake([
-            'sepehr.shaparak.ir:8081/V1/PeymentApi/GetToken' => Http::response(['Status' => 0, 'AccessToken' => 'tok']),
-            'sepehr.shaparak.ir:8081/V1/PeymentApi/Advice' => Http::response(['Status' => 'Ok', 'ReturnId' => '1000']),
+            'sepehr.shaparak.ir/Rest/V1/PeymentApi/GetToken' => Http::response(['Status' => 0, 'AccessToken' => 'tok']),
+            'sepehr.shaparak.ir/Rest/V1/PeymentApi/Advice' => Http::response(['Status' => 'Ok', 'ReturnId' => '1000']),
             '*.example.com/*' => Http::response('', 200),
         ]);
         $payment = $this->createPayment();
@@ -100,7 +100,7 @@ class SepehrGatewayTest extends GatewayTestCase
     public function test_callback_for_other_invoice_is_rejected(): void
     {
         Http::fake([
-            'sepehr.shaparak.ir:8081/V1/PeymentApi/GetToken' => Http::response(['Status' => 0, 'AccessToken' => 'tok']),
+            'sepehr.shaparak.ir/Rest/V1/PeymentApi/GetToken' => Http::response(['Status' => 0, 'AccessToken' => 'tok']),
             '*.example.com/*' => Http::response('', 200),
         ]);
         $payment = $this->createPayment();
@@ -113,7 +113,7 @@ class SepehrGatewayTest extends GatewayTestCase
     public function test_ip_not_registered_error_is_explained(): void
     {
         Http::fake([
-            'sepehr.shaparak.ir:8081/V1/PeymentApi/GetToken' => Http::response(['Status' => -2, 'Accesstoken' => null]),
+            'sepehr.shaparak.ir/Rest/V1/PeymentApi/GetToken' => Http::response(['Status' => -2, 'Accesstoken' => null]),
             '*.example.com/*' => Http::response('', 200),
         ]);
 

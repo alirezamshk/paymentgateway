@@ -24,6 +24,8 @@ use App\Support\SensitiveData;
  *
  * Amounts are in Rials. Credentials: terminal_identifier = terminal id.
  * The server IP must be registered with Sepehr (error -2 otherwise).
+ * Defaults (verified from the production server): api_url https://sepehr.shaparak.ir/Rest
+ * (port 443; the old :8081 endpoint refuses connections), pay_url .../Payment/Pay.
  * Provider config overrides: api_url (base of /V1/PeymentApi/...), pay_url, pay_method (GET|POST).
  * Cross-checked against the shetabit/multipay Sepehr driver; confirm with a real payment
  * before production use.
@@ -157,7 +159,7 @@ class SepehrGateway extends AbstractGateway
 
     private function apiUrl(): string
     {
-        return rtrim((string) $this->setting('api_url', 'https://sepehr.shaparak.ir:8081'), '/');
+        return rtrim((string) $this->setting('api_url', 'https://sepehr.shaparak.ir/Rest'), '/');
     }
 
     private function payUrl(): string
