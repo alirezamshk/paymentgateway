@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex">
-    <title>@yield('title', 'Admin') - Tech-Kala Payments</title>
+    <title>@yield('title', 'Admin') - {{ config('app.name') }}</title>
     <style>
         :root { --bg:#f6f7f9; --card:#fff; --text:#1d2330; --muted:#6b7385; --border:#e1e4ea; --accent:#1f6feb; --ok:#1a7f37; --bad:#cf222e; --warn:#9a6700; }
         @media (prefers-color-scheme: dark) { :root { --bg:#0f1218; --card:#171b23; --text:#e6e9ef; --muted:#9aa3b5; --border:#2a303c; } }
@@ -40,7 +40,7 @@
 <body>
 @auth
 <header>
-    <strong>Tech-Kala Payments</strong>
+    <strong>{{ config('app.name') }}</strong>
     <a href="{{ route('admin.dashboard') }}">Dashboard</a>
     <a href="{{ route('admin.clients.index') }}">Clients</a>
     <a href="{{ route('admin.merchants.index') }}">Merchants</a>

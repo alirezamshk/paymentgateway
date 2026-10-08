@@ -74,7 +74,7 @@ never go back to pending.
   once per payment (`pending` and `failed` once per attempt). A worker claims a delivery with
   a conditional `UPDATE ... WHERE status='pending'`, so a delivery is never sent by two
   workers at once and a delivered one is never re-sent. Receivers still de-duplicate on
-  `X-TK-Delivery-Id`, because at-least-once delivery is inherent to HTTP.
+  `X-Webhook-Delivery-Id`, because at-least-once delivery is inherent to HTTP.
 * **Payment status never depends on webhook delivery.**
 
 ### Late callbacks
@@ -116,6 +116,12 @@ This is why the default TTL (60 min) is well above typical PSP session lifetimes
   and redirects are not followed.
 * Eloquent and the query builder are used throughout (parameterized SQL), with strict
   validation on every input.
+
+## White-label
+
+The brand name (`APP_NAME`), the public origin (`APP_URL`) and the webhook header prefix
+(`WEBHOOK_HEADER_PREFIX`, default `X-Webhook-`, see `App\Webhooks\WebhookHeaders`) are all
+configuration. The same code can run as several independent branded instances.
 
 ## Adding a PSP
 

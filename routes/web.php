@@ -5,7 +5,7 @@ use App\Http\Controllers\Web\PaymentPageController;
 use App\Http\Controllers\Web\SandboxPspController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', fn () => response()->view('pay.message', ['title' => 'Tech-Kala Payment Service', 'message' => 'Central payment service.']));
+Route::get('/', fn () => response()->view('pay.message', ['title' => config('app.name'), 'message' => 'Central payment service.']));
 
 Route::get('pay/{payment}', [PaymentPageController::class, 'show'])
     ->middleware('throttle:payment-page')

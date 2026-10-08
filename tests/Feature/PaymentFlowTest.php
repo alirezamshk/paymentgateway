@@ -35,7 +35,7 @@ class PaymentFlowTest extends TestCase
 
         // Follow the PSP redirect to our callback.
         $location = $callback->headers->get('Location');
-        $this->assertStringStartsWith("https://pay.tech-kala.test/api/v1/gateways/sandbox/callback/{$id}", $location);
+        $this->assertStringStartsWith("https://pay.example.test/api/v1/gateways/sandbox/callback/{$id}", $location);
         $final = $this->get($location)->assertStatus(303);
 
         $this->assertSame(
@@ -57,7 +57,7 @@ class PaymentFlowTest extends TestCase
         $this->assertSame('delivered', $delivery->status->value);
 
         Http::assertSent(function (Request $request) use ($auth, $id) {
-            if (($request->header('X-TK-Event')[0] ?? null) !== 'payment.succeeded') {
+            if (($request->header('X-Webhook-Event')[0] ?? null) !== 'payment.succeeded') {
                 return false;
             }
             $body = json_decode($request->body(), true);
@@ -65,7 +65,7 @@ class PaymentFlowTest extends TestCase
             return $body['event'] === 'payment.succeeded'
                 && $body['payment_id'] === $id
                 && $body['status'] === 'paid'
-                && WebhookSigner::verify($auth['webhook_secret'], (int) $request->header('X-TK-Timestamp')[0], $request->body(), $request->header('X-TK-Signature')[0])
+                && WebhookSigner::verify($auth['webhook_secret'], (int) $request->header('X-Webhook-Timestamp')[0], $request->body(), $request->header('X-Webhook-Signature')[0])
                 && ! str_contains($request->body(), $auth['secret']);
         });
 

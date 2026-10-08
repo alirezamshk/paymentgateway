@@ -37,7 +37,7 @@ class CreatePaymentTest extends TestCase
             ->assertJsonPath('amount', 500000)
             ->assertJsonPath('currency', 'IRR')
             ->assertJsonPath('merchant_id', $merchant->public_id)
-            ->assertJsonPath('payment_url', "https://pay.tech-kala.test/pay/{$paymentId}")
+            ->assertJsonPath('payment_url', "https://pay.example.test/pay/{$paymentId}")
             ->assertJsonMissingPath('id')
             ->assertJsonMissingPath('client_id');
 

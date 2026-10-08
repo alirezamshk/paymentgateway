@@ -25,6 +25,10 @@ php artisan key:generate
   detected, and HTTPS is enforced in production.
 * `APP_DEBUG=false`, `APP_ENV=production`, `GATEWAY_SANDBOX_ENABLED=false`,
   `PAYMENTS_ALLOW_INSECURE_URLS=false`.
+* Branding (white-label): `APP_NAME` is shown on the payment page and admin panel.
+  `WEBHOOK_HEADER_PREFIX` (default `X-Webhook-`) and `WEBHOOK_USER_AGENT` control webhook
+  headers. Changing the prefix after clients are live breaks their signature checks, so
+  coordinate it with them.
 * Never commit `.env`. Inject secrets from your secret store or deployment system.
 
 ## 2. Database

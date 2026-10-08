@@ -19,7 +19,7 @@ Route::prefix('v1')->group(function () {
         Route::patch('merchants/{merchantId}', [MerchantController::class, 'update'])->name('api.merchants.update');
     });
 
-    // PSP -> customer browser -> Tech-Kala. Not client-authenticated; outcome comes from PSP verify.
+    // PSP -> customer browser -> this service. Not client-authenticated; outcome comes from PSP verify.
     Route::match(['get', 'post'], 'gateways/{provider}/callback/{payment}', GatewayCallbackController::class)
         ->where('provider', '[a-z0-9_-]+')
         ->middleware('throttle:callbacks')

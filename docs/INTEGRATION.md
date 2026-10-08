@@ -118,12 +118,14 @@ async function techkala(method, path, payload, keyId, secret) {
 
 ## 4. Receiving webhooks
 
-Headers: `X-TK-Event`, `X-TK-Delivery-Id`, `X-TK-Timestamp`, `X-TK-Signature`.
+Headers: `X-Webhook-Event`, `X-Webhook-Delivery-Id`, `X-Webhook-Timestamp`, `X-Webhook-Signature`.
+The `X-Webhook-` prefix is the default. Your payment service operator may configure a different
+prefix (`WEBHOOK_HEADER_PREFIX`); the header names are otherwise identical.
 
 ```php
 $raw = file_get_contents('php://input');
-$timestamp = (int) ($_SERVER['HTTP_X_TK_TIMESTAMP'] ?? 0);
-$signature = (string) ($_SERVER['HTTP_X_TK_SIGNATURE'] ?? '');
+$timestamp = (int) ($_SERVER['HTTP_X_WEBHOOK_TIMESTAMP'] ?? 0);
+$signature = (string) ($_SERVER['HTTP_X_WEBHOOK_SIGNATURE'] ?? '');
 $expected = hash_hmac('sha256', $timestamp.'.'.$raw, getenv('TK_WEBHOOK_SECRET'));
 
 if (abs(time() - $timestamp) > 300 || ! hash_equals($expected, $signature)) {
@@ -132,7 +134,7 @@ if (abs(time() - $timestamp) > 300 || ! hash_equals($expected, $signature)) {
 }
 
 $event = json_decode($raw, true);
-$deliveryId = $_SERVER['HTTP_X_TK_DELIVERY_ID'];
+$deliveryId = $_SERVER['HTTP_X_WEBHOOK_DELIVERY_ID'];
 // 1. Ignore if $deliveryId was already processed (deliveries can repeat).
 // 2. Look up your order by $event['order_id'] and check amount + currency match.
 // 3. On "payment.succeeded" mark the order paid (idempotently).

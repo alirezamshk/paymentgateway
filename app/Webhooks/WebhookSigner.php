@@ -4,7 +4,7 @@ namespace App\Webhooks;
 
 /**
  * Webhook signature: hex(HMAC-SHA256(webhook_secret, "{timestamp}.{raw_body}")).
- * Sent as X-TK-Signature together with X-TK-Timestamp.
+ * Sent in the signature header together with the timestamp header (see WebhookHeaders).
  */
 final class WebhookSigner
 {

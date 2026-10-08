@@ -15,6 +15,21 @@ Client site ◀── signed webhook (queued, retried) ─── Tech-Kala
 This is an independent system. It has no runtime, database or redirect dependency on any
 legacy payment system.
 
+## White-label
+
+Nothing in the logic is tied to one brand or domain. Deploy as many independent instances as
+you need, each with its own `.env`, database and `APP_KEY`:
+
+| Setting | Controls | Default |
+|---------|----------|---------|
+| `APP_URL` | Public origin: payment page, PSP callback URLs, API base | - |
+| `APP_NAME` | Brand name on the payment page and admin panel | `Tech-Kala Payments` in `.env.example` |
+| `WEBHOOK_HEADER_PREFIX` | Webhook header names `{prefix}Event`, `{prefix}Delivery-Id`, `{prefix}Timestamp`, `{prefix}Signature` | `X-Webhook-` |
+| `WEBHOOK_USER_AGENT` | `User-Agent` of webhook requests | `PaymentService-Webhooks/1.0` |
+
+Pick the domain before going live. Each payment stores its PSP callback URL when it is
+created, so keep the old domain redirecting to the new one while payments are in flight.
+
 ## Stack
 
 PHP 8.2+ · Laravel 11 · MySQL/MariaDB · Redis (cache, nonces, queue) · PHPUnit

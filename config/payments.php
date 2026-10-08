@@ -43,5 +43,9 @@ return [
         'queue' => env('WEBHOOK_QUEUE', 'webhooks'),
         // Resolve the webhook host and refuse private/reserved IPs (SSRF protection).
         'block_private_networks' => (bool) env('WEBHOOK_BLOCK_PRIVATE_NETWORKS', true),
+        // White-labelling: header names are {prefix}Event, {prefix}Delivery-Id,
+        // {prefix}Timestamp and {prefix}Signature.
+        'header_prefix' => env('WEBHOOK_HEADER_PREFIX', 'X-Webhook-'),
+        'user_agent' => env('WEBHOOK_USER_AGENT', 'PaymentService-Webhooks/1.0'),
     ],
 ];

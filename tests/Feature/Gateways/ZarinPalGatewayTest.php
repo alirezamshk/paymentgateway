@@ -32,7 +32,7 @@ class ZarinPalGatewayTest extends GatewayTestCase
             && $r['merchant_id'] === self::MERCHANT
             && $r['amount'] === 500000
             && $r['currency'] === 'IRR'
-            && $r['callback_url'] === "https://pay.tech-kala.test/api/v1/gateways/zarinpal/callback/{$payment->public_id}");
+            && $r['callback_url'] === "https://pay.example.test/api/v1/gateways/zarinpal/callback/{$payment->public_id}");
 
         // Merchant id is not persisted in plaintext payload logs.
         $this->assertSame('[REDACTED]', $payment->latestAttempt->request_payload['merchant_id']);

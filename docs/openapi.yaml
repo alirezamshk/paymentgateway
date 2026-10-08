@@ -322,26 +322,28 @@ webhooks:
       tags: [Webhooks]
       summary: Payment event sent to the client's webhook URL
       description: |
+        Header names use the configurable prefix `WEBHOOK_HEADER_PREFIX` (default `X-Webhook-`).
+
         Sent for `payment.created`, `payment.pending`, `payment.succeeded`, `payment.failed`,
         `payment.expired`, `payment.cancelled`.
 
         **Verify every webhook:**
 
         ```
-        expected = hex(HMAC-SHA256(webhook_secret, X-TK-Timestamp + "." + raw_body))
-        constant_time_equals(expected, X-TK-Signature) and |now - X-TK-Timestamp| <= 300
+        expected = hex(HMAC-SHA256(webhook_secret, X-Webhook-Timestamp + "." + raw_body))
+        constant_time_equals(expected, X-Webhook-Signature) and |now - X-Webhook-Timestamp| <= 300
         ```
 
         Respond with any `2xx` within 10 seconds. Non-2xx / timeouts are retried with
         exponential backoff (30s, 60s, 120s, ... capped at 6h, 8 attempts by default), after
         which the delivery is marked failed and can be retried from the admin panel.
-        Deliveries can repeat - de-duplicate on `X-TK-Delivery-Id`. Payment status never
+        Deliveries can repeat - de-duplicate on `X-Webhook-Delivery-Id`. Payment status never
         depends on webhook delivery.
       parameters:
-        - { name: X-TK-Event, in: header, required: true, schema: { type: string }, example: payment.succeeded }
-        - { name: X-TK-Delivery-Id, in: header, required: true, schema: { type: string }, example: whd_01jabcdefghjkmnpqrstvwxyz0 }
-        - { name: X-TK-Timestamp, in: header, required: true, schema: { type: string }, example: '1791455400' }
-        - { name: X-TK-Signature, in: header, required: true, schema: { type: string } }
+        - { name: X-Webhook-Event, in: header, required: true, schema: { type: string }, example: payment.succeeded }
+        - { name: X-Webhook-Delivery-Id, in: header, required: true, schema: { type: string }, example: whd_01jabcdefghjkmnpqrstvwxyz0 }
+        - { name: X-Webhook-Timestamp, in: header, required: true, schema: { type: string }, example: '1791455400' }
+        - { name: X-Webhook-Signature, in: header, required: true, schema: { type: string } }
         - { name: X-Request-Id, in: header, required: false, schema: { type: string } }
       requestBody:
         content:

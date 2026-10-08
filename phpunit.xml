@@ -29,7 +29,7 @@
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
-        <env name="APP_URL" value="https://pay.tech-kala.test"/>
+        <env name="APP_URL" value="https://pay.example.test"/>
         <env name="GATEWAY_SANDBOX_ENABLED" value="true"/>
         <env name="PAYMENTS_ALLOW_INSECURE_URLS" value="false"/>
         <env name="LOG_CHANNEL" value="null"/>

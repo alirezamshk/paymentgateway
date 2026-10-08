@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('webhook_deliveries', function (Blueprint $table) {
             $table->id();
-            // Sent as X-TK-Delivery-Id so receivers can de-duplicate.
+            // Sent as the delivery id header (X-Webhook-Delivery-Id by default) so receivers can de-duplicate.
             $table->string('public_id', 40)->unique();
             $table->foreignId('client_id')->constrained('clients')->cascadeOnDelete();
             $table->foreignId('payment_id')->constrained('payments')->cascadeOnDelete();

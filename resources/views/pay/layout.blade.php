@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="referrer" content="no-referrer">
-    <title>@yield('title', 'پرداخت') - Tech-Kala</title>
+    <title>@yield('title', 'پرداخت') - {{ config('app.name') }}</title>
     <style>
         :root { --bg:#f5f6f8; --card:#fff; --text:#1d2330; --muted:#6b7385; --accent:#1f6feb; --ok:#1a7f37; --bad:#cf222e; --border:#e3e6ec; }
         @media (prefers-color-scheme: dark) { :root { --bg:#0f1218; --card:#171b23; --text:#e6e9ef; --muted:#9aa3b5; --border:#2a303c; } }

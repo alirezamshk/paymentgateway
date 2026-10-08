@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Enums\WebhookStatus;
 use App\Models\WebhookDelivery;
 use App\Payments\PaymentEventRecorder;
+use App\Webhooks\WebhookHeaders;
 use App\Webhooks\WebhookService;
 use App\Webhooks\WebhookSigner;
 use App\Webhooks\WebhookUrlGuard;
@@ -20,7 +21,7 @@ use Throwable;
 /**
  * Delivers one webhook attempt. Safe to run concurrently or more than once: a delivery is
  * claimed with a conditional UPDATE, so only one worker sends it at a time and delivered
- * rows are never re-sent. Receivers should still de-duplicate on X-TK-Delivery-Id.
+ * rows are never re-sent. Receivers should still de-duplicate on the delivery id header (see WebhookHeaders).
  */
 class DeliverWebhook implements ShouldQueue
 {
@@ -63,11 +64,11 @@ class DeliverWebhook implements ShouldQueue
                 ->withOptions(['allow_redirects' => false])
                 ->withHeaders([
                     'Content-Type' => 'application/json',
-                    'User-Agent' => 'TechKala-Webhooks/1.0',
-                    'X-TK-Event' => $delivery->event,
-                    'X-TK-Delivery-Id' => $delivery->public_id,
-                    'X-TK-Timestamp' => (string) $timestamp,
-                    'X-TK-Signature' => WebhookSigner::sign($secret, $timestamp, $body),
+                    'User-Agent' => (string) config('payments.webhooks.user_agent'),
+                    WebhookHeaders::event() => $delivery->event,
+                    WebhookHeaders::deliveryId() => $delivery->public_id,
+                    WebhookHeaders::timestamp() => (string) $timestamp,
+                    WebhookHeaders::signature() => WebhookSigner::sign($secret, $timestamp, $body),
                     'X-Request-Id' => (string) $delivery->request_id,
                 ])
                 ->withBody($body, 'application/json')
