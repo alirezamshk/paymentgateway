@@ -39,6 +39,7 @@
         </nav>
         <div class="sidebar-foot">
             <div class="who">{{ auth()->user()->email }}</div>
+            <a class="btn ghost" style="color:var(--sidebar-text)" href="{{ route('admin.password.edit') }}">@include('admin._icon', ['name' => 'key']) {{ __('Change password') }}</a>
             <form method="POST" action="{{ route('admin.logout') }}">@csrf
                 <button class="btn ghost" style="color:var(--sidebar-text)">@include('admin._icon', ['name' => 'logout']) {{ __('Logout') }}</button>
             </form>

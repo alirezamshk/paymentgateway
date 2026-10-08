@@ -36,6 +36,8 @@ Route::prefix('admin')->name('admin.')->middleware(SetAdminLocale::class)->group
 
     Route::middleware(['auth', 'admin'])->group(function () {
         Route::get('/', [Admin\DashboardController::class, 'index'])->name('dashboard');
+        Route::get('password', [Admin\PasswordController::class, 'edit'])->name('password.edit');
+        Route::put('password', [Admin\PasswordController::class, 'update'])->middleware('throttle:6,1')->name('password.update');
 
         Route::get('clients', [Admin\ClientController::class, 'index'])->name('clients.index');
         Route::get('clients/create', [Admin\ClientController::class, 'create'])->name('clients.create');
