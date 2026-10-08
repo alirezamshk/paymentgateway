@@ -78,4 +78,18 @@ class PaymentSearchTest extends TestCase
         $this->actingAs($admin)->get('/admin')->assertSee('dir="ltr"', false)->assertSee('Dashboard');
         $this->actingAs($admin)->post('/admin/locale/de')->assertNotFound();
     }
+
+    public function test_payment_detail_shows_client_supplied_data(): void
+    {
+        $id = $this->signed($this->auth, 'POST', '/api/v1/payments', $this->paymentBody([
+            'order_id' => 'INV-777', 'description' => 'Wallet top-up',
+            'customer' => ['mobile' => '09121234567', 'username' => 'ali_m'],
+            'metadata' => ['plan' => 'gold', 'invoice_id' => 777],
+        ]))->json('payment_id');
+
+        $this->actingAs(User::factory()->create(['is_admin' => true]))
+            ->get("/admin/payments/{$id}")->assertOk()
+            ->assertSee('INV-777')->assertSee('Wallet top-up')->assertSee('09121234567')->assertSee('ali_m')
+            ->assertSee('&quot;plan&quot;: &quot;gold&quot;', false);
+    }
 }

@@ -64,6 +64,8 @@ Route::prefix('admin')->name('admin.')->middleware(SetAdminLocale::class)->group
         Route::put('providers/{provider}', [Admin\ProviderController::class, 'update'])->name('providers.update');
         Route::post('providers/{provider}/toggle', [Admin\ProviderController::class, 'toggle'])->name('providers.toggle');
 
+        Route::get('reports/sales', [Admin\ReportController::class, 'sales'])->name('reports.sales');
+
         Route::get('settlements', [Admin\SettlementController::class, 'index'])->name('settlements.index');
         Route::get('settlements/{client}', [Admin\SettlementController::class, 'show'])->name('settlements.show');
         Route::get('settlements/{client}/export', [Admin\SettlementController::class, 'export'])->name('settlements.export');
