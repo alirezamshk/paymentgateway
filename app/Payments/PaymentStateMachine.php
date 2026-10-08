@@ -6,6 +6,7 @@ use App\Enums\PaymentStatus;
 use App\Exceptions\InvalidStateTransition;
 use App\Models\Payment;
 use App\Models\PaymentAttempt;
+use App\Settlement\LedgerService;
 use App\Webhooks\WebhookService;
 use Illuminate\Support\Facades\DB;
 use LogicException;
@@ -22,6 +23,7 @@ class PaymentStateMachine
     public function __construct(
         private readonly PaymentEventRecorder $events,
         private readonly WebhookService $webhooks,
+        private readonly LedgerService $ledger,
     ) {}
 
     /**
@@ -59,6 +61,11 @@ class PaymentStateMachine
             $from->value,
             $to->value,
         );
+
+        // Credit the client's settlement ledger in the same transaction as the paid transition.
+        if ($to === PaymentStatus::Paid) {
+            $this->ledger->recordPayment($payment);
+        }
 
         if ($event = $to->webhookEvent()) {
             $this->webhooks->enqueue($payment, $event);

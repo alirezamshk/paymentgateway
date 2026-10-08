@@ -33,7 +33,9 @@ class ClientService
                 'webhook_url' => $data['webhook_url'] ?? null,
                 'return_url' => $data['return_url'] ?? null,
                 'webhook_secret' => $webhookSecret,
-            ]);
+            ] + array_intersect_key($data, array_flip([
+                'commission_bps', 'commission_fixed_irr', 'settlement_delay_hours', 'iban', 'account_holder',
+            ])));
 
             [$credential, $secret] = $this->issueCredential($client);
 

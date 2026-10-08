@@ -13,6 +13,7 @@ use App\Models\Client;
 use App\Models\Merchant;
 use App\Models\Payment;
 use App\Models\PaymentAttempt;
+use App\Support\Mobile;
 use App\Support\SensitiveData;
 use App\Webhooks\WebhookService;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -163,6 +164,9 @@ class PaymentService
             'amount' => (int) $data['amount'],
             'currency' => Currency::from($data['currency']),
             'description' => $data['description'] ?? null,
+            'customer_mobile' => Mobile::normalize($data['customer']['mobile'] ?? null),
+            'customer_username' => isset($data['customer']['username']) ? trim((string) $data['customer']['username']) ?: null : null,
+            'customer_name' => isset($data['customer']['name']) ? trim((string) $data['customer']['name']) ?: null : null,
             'return_url' => $data['return_url'] ?? $client->return_url,
             'metadata' => $data['metadata'] ?? null,
             'expires_at' => now()->addMinutes((int) config('payments.payment_ttl_minutes')),
@@ -278,6 +282,11 @@ class PaymentService
             'merchant_id' => $data['merchant_id'] ?? null,
             'metadata' => $data['metadata'] ?? null,
         ];
+
+        // Payer details are only included when sent, so older integrations keep the same hash.
+        if (! empty($data['customer'])) {
+            $normalized['customer'] = $data['customer'];
+        }
 
         return hash('sha256', json_encode($normalized, JSON_THROW_ON_ERROR));
     }

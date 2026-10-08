@@ -7,16 +7,19 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * The admin panel has its own language (ADMIN_LOCALE, default "fa"), independent of the
- * API, whose messages stay in English for client integrations.
+ * Admin panel language: the user's choice (session, via the language switch) or ADMIN_LOCALE
+ * (default "fa"). The API always answers in English for client integrations.
  */
 class SetAdminLocale
 {
+    public const SUPPORTED = ['fa', 'en'];
+
     public function handle(Request $request, Closure $next): Response
     {
-        $locale = (string) config('payments.admin_locale', 'fa');
+        $locale = $request->hasSession() ? $request->session()->get('admin_locale') : null;
+        $locale = in_array($locale, self::SUPPORTED, true) ? $locale : (string) config('payments.admin_locale', 'fa');
 
-        if (in_array($locale, ['fa', 'en'], true)) {
+        if (in_array($locale, self::SUPPORTED, true)) {
             app()->setLocale($locale);
         }
 

@@ -1,24 +1,31 @@
 @extends('admin.layout')
 @section('title', __('Clients'))
+@section('actions')<a class="btn" href="{{ route('admin.clients.create') }}">@include('admin._icon', ['name' => 'plus']) {{ __('New client') }}</a>@endsection
 @section('content')
 <div class="card">
-    <form class="filters" method="GET">
-        <div><label>{{ __('Search') }}</label><input name="q" value="{{ request('q') }}"></div>
-        <div><button>{{ __('Search') }}</button></div>
-        <div style="margin-inline-start:auto"><a class="btn" href="{{ route('admin.clients.create') }}">{{ __('New client') }}</a></div>
-    </form>
+    <div class="card-body">
+        <form class="filters" method="GET"><div class="field"><label>{{ __('Search') }}</label><input name="q" value="{{ request('q') }}"></div><div class="field"><button class="btn secondary">@include('admin._icon', ['name' => 'search']) {{ __('Search') }}</button></div></form>
+    </div>
 </div>
 <div class="card">
+    <div class="card-body flush"><div class="table-wrap">
     <table>
-        <tr><th>{{ __('Name') }}</th><th>{{ __('Slug') }}</th><th>{{ __('Status') }}</th><th>{{ __('Merchants') }}</th><th>{{ __('Payments') }}</th><th>{{ __('Webhook URL') }}</th></tr>
-        @foreach($clients as $c)
+        <thead><tr><th>{{ __('Name') }}</th><th>{{ __('Slug') }}</th><th>{{ __('Status') }}</th><th class="num">{{ __('Merchants') }}</th><th class="num">{{ __('Payments') }}</th><th>{{ __('Commission') }}</th><th>{{ __('Webhook URL') }}</th></tr></thead>
+        <tbody>
+        @forelse($clients as $c)
             <tr>
-                <td><a href="{{ route('admin.clients.show', $c) }}">{{ $c->name }}</a></td><td dir="ltr">{{ $c->slug }}</td>
-                <td><span class="badge s-{{ $c->status->value }}">{{ __($c->status->value) }}</span></td>
-                <td>{{ $c->merchants_count }}</td><td>{{ $c->payments_count }}</td><td dir="ltr">{{ $c->webhook_url }}</td>
+                <td><a href="{{ route('admin.clients.show', $c) }}"><strong>{{ $c->name }}</strong></a></td><td class="mono ltr">{{ $c->slug }}</td>
+                <td>@include('admin._status', ['status' => $c->status->value])</td>
+                <td class="num">{{ $c->merchants_count }}</td><td class="num">{{ number_format($c->payments_count) }}</td>
+                <td>@include('admin.settlements._commission', ['client' => $c])</td>
+                <td class="small ltr">{{ \Illuminate\Support\Str::limit($c->webhook_url, 48) }}</td>
             </tr>
-        @endforeach
+        @empty
+            <tr><td colspan="7" class="empty">{{ __('No clients yet.') }}</td></tr>
+        @endforelse
+        </tbody>
     </table>
-    {{ $clients->links() }}
+    </div></div>
+    {{ $clients->links('admin.pagination') }}
 </div>
 @endsection

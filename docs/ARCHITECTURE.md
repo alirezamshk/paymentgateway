@@ -117,6 +117,22 @@ This is why the default TTL (60 min) is well above typical PSP session lifetimes
 * Eloquent and the query builder are used throughout (parameterized SQL), with strict
   validation on every input.
 
+## Settlement
+
+For clients whose payments land in Tech-Kala's own account, an append-only ledger
+(`ledger_entries`, Rials, signed) records what Tech-Kala owes each client:
+
+* the paid transition (inside `PaymentStateMachine`, same transaction) adds `+amount` (`payment`)
+  and, when configured, `-commission` (`commission` = floor(amount × bps / 10000) + fixed, capped
+  at the amount). `UNIQUE(payment_id, type)` makes crediting idempotent;
+* an admin records a manual bank transfer as a `payout` (row-locked per client, cannot exceed the
+  available balance);
+* corrections are `adjustment` entries; entries are never edited or deleted.
+
+`available_at` = paid time + the client's hold period; the payable balance only counts entries
+whose `available_at` has passed. `settlement:backfill` credits paid payments created before the
+ledger existed.
+
 ## White-label
 
 The brand name (`APP_NAME`), the public origin (`APP_URL`) and the webhook header prefix

@@ -116,6 +116,7 @@ Request body:
 | `description` | string | no | Max 500 chars, shown to the customer. |
 | `return_url` | string | no | HTTPS. Defaults to the Return URL registered for this site. |
 | `metadata` | object | no | Max 20 keys / 4 KB, returned as-is. |
+| `customer` | object | no (recommended) | `{"mobile": "09121234567", "username": "...", "name": "..."}`: the payer. Lets Tech-Kala's support find payments by mobile / username. Mobile must be an Iranian mobile number (`+98`, `0098` and Persian digits are accepted). |
 
 Response `201 Created` (new) or `200 OK` (same order sent again with identical parameters):
 
