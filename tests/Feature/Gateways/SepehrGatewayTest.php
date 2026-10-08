@@ -27,7 +27,7 @@ class SepehrGatewayTest extends GatewayTestCase
     public function test_create_and_advice(): void
     {
         Http::fake([
-            'sepehr.shaparak.ir:8081/V1/PeymentApi/GetToken' => Http::response(['Status' => 0, 'AccessToken' => 'tok-123']),
+            'sepehr.shaparak.ir:8081/V1/PeymentApi/GetToken' => Http::response(['Status' => 0, 'Accesstoken' => 'tok-123']),
             'sepehr.shaparak.ir:8081/V1/PeymentApi/Advice' => Http::response(['Status' => 'Ok', 'ReturnId' => '500000', 'Message' => 'ok']),
             '*.example.com/*' => Http::response('', 200),
         ]);
@@ -35,7 +35,9 @@ class SepehrGatewayTest extends GatewayTestCase
         $payment = $this->createPayment();
         $redirect = $payment->latestAttempt->redirect_payload;
         $this->assertSame('POST', $redirect['method']);
-        $this->assertSame(['TerminalID' => '98765432', 'token' => 'tok-123'], $redirect['fields']);
+        $this->assertSame(['token' => 'tok-123', 'terminalID' => '98765432'], $redirect['fields']);
+        Http::assertSent(fn (Request $r) => str_ends_with($r->url(), 'GetToken') && $r->isForm()
+            && $r['Amount'] == 500000 && $r['TerminalID'] === '98765432' && $r['InvoiceID'] === (string) $payment->latestAttempt->psp_invoice_id);
 
         $this->post("/api/v1/gateways/sepehr/callback/{$payment->public_id}", $this->callbackData($payment))
             ->assertRedirectContains('status=paid');
@@ -44,7 +46,7 @@ class SepehrGatewayTest extends GatewayTestCase
         $this->assertSame(PaymentStatus::Paid, $payment->status);
         $this->assertSame('987654321012', $payment->reference_number);
         $this->assertSame('123456', $payment->trace_number);
-        Http::assertSent(fn (Request $r) => str_ends_with($r->url(), 'Advice') && $r['digitalreceipt'] === 'DR-ABC' && $r['Tid'] === '98765432');
+        Http::assertSent(fn (Request $r) => str_ends_with($r->url(), 'Advice') && $r->isForm() && $r['digitalreceipt'] === 'DR-ABC' && $r['Tid'] === '98765432');
     }
 
     public function test_irt_payment_is_sent_in_rials(): void
@@ -56,7 +58,7 @@ class SepehrGatewayTest extends GatewayTestCase
 
         $this->createPayment(['currency' => 'IRT', 'amount' => 50000]);
 
-        Http::assertSent(fn (Request $r) => str_ends_with($r->url(), 'GetToken') && $r['Amount'] === 500000);
+        Http::assertSent(fn (Request $r) => str_ends_with($r->url(), 'GetToken') && (int) $r['Amount'] === 500000);
     }
 
     public function test_unsuccessful_respcode_fails_without_advice(): void
@@ -99,5 +101,19 @@ class SepehrGatewayTest extends GatewayTestCase
         $this->post("/api/v1/gateways/sepehr/callback/{$payment->public_id}", $this->callbackData($payment, ['invoiceid' => '1']));
 
         $this->assertStatus($payment, PaymentStatus::Pending);
+    }
+
+    public function test_ip_not_registered_error_is_explained(): void
+    {
+        Http::fake([
+            'sepehr.shaparak.ir:8081/V1/PeymentApi/GetToken' => Http::response(['Status' => -2, 'Accesstoken' => null]),
+            '*.example.com/*' => Http::response('', 200),
+        ]);
+
+        $payment = $this->createPayment();
+
+        $this->assertStatus($payment, PaymentStatus::Failed);
+        $this->assertSame('SEPEHR_-2', $payment->latestAttempt->error_code);
+        $this->assertStringContainsString('port 8081', $payment->latestAttempt->error_message);
     }
 }
