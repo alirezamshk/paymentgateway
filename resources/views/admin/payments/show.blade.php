@@ -33,6 +33,12 @@
             <div><dt>{{ __('Settled') }}</dt><dd class="ltr">{{ Display::date($payment->settled_at) }}</dd></div>
         </dl>
         <div class="muted small" style="margin-top:12px">{{ __('Return URL') }}: <span class="ltr">{{ $payment->return_url }}</span></div>
+        @if($payment->metadata)
+            <div style="margin-top:14px">
+                <div class="muted small" style="margin-bottom:6px">{{ __('Metadata sent by the client') }}</div>
+                <pre>{{ json_encode($payment->metadata, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) }}</pre>
+            </div>
+        @endif
     </div>
 </div>
 

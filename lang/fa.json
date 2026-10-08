@@ -258,5 +258,6 @@
     "ledger.payout": "واریز",
     "ledger.adjustment": "اصلاحیه",
     "error.INSUFFICIENT_BALANCE": "مبلغ از مانده قابل پرداخت بیشتر است.",
-    "error.INVALID_AMOUNT": "مبلغ نامعتبر است."
+    "error.INVALID_AMOUNT": "مبلغ نامعتبر است.",
+    "Metadata sent by the client": "اطلاعات اضافه ارسالی سایت (metadata)"
 }
