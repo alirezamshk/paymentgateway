@@ -15,7 +15,6 @@
         <div class="redirecting">
             <div class="spinner" aria-hidden="true"></div>
             <p>در حال انتقال به درگاه بانک...</p>
-            <p class="muted">{{ number_format($payment->amount) }} {{ $currencyLabel }} - {{ $payment->client->name }}</p>
         </div>
         <form id="psp-form" method="{{ strtoupper($redirect->method) === 'POST' ? 'POST' : 'GET' }}" action="{{ $redirect->url }}">
             {{-- Fields are sent as form data (POST) or as the query string (GET). --}}
