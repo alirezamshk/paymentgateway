@@ -133,6 +133,14 @@ For clients whose payments land in Tech-Kala's own account, an append-only ledge
 whose `available_at` has passed. `settlement:backfill` credits paid payments created before the
 ledger existed.
 
+## Sales report
+
+`App\Reports\SalesReport` aggregates paid payments (Rials) per day / week / month and per provider
+or client, in Tehran time; Persian uses Jalali months and Saturday weeks, English Gregorian months
+and Monday weeks. `StackedColumnChart` turns it into SVG geometry rendered by
+`admin/reports/sales.blade.php` (no JavaScript, so the admin CSP stays strict). Each series keeps a
+fixed colour slot by entity id; beyond 7 series the rest fold into "Other".
+
 ## White-label
 
 The brand name (`APP_NAME`), the public origin (`APP_URL`) and the webhook header prefix

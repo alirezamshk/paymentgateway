@@ -39,6 +39,7 @@ PHP 8.2+ · Laravel 11 · MySQL/MariaDB · Redis (cache, nonces, queue) · PHPUn
 
 | Document | Contents |
 |----------|----------|
+| [CLAUDE.md](CLAUDE.md) | Hand-off for continuing development: hard rules, code map, conventions, production state, open follow-ups |
 | [docs/INTEGRATION.md](docs/INTEGRATION.md) | For client sites: signing requests, creating payments, verifying webhooks (PHP/Node samples) |
 | [docs/openapi.yaml](docs/openapi.yaml) | OpenAPI 3.1 reference: auth, payments, merchants, callbacks, webhooks, errors, idempotency |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Module layout, state machine, concurrency model, money convention, adding a PSP |
