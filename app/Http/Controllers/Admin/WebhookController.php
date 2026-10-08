@@ -33,12 +33,12 @@ class WebhookController extends Controller
     public function retry(Request $request, WebhookDelivery $delivery, WebhookService $webhooks, AuditLogger $audit): RedirectResponse
     {
         if ($delivery->status === WebhookStatus::Processing) {
-            return back()->with('error', 'Delivery is currently being processed.');
+            return back()->with('error', __('Delivery is currently being processed.'));
         }
 
         $webhooks->retry($delivery);
         $audit->log('admin', $request->user()->id, 'webhook.manual_retry', $delivery->client_id, 'webhook_delivery', $delivery->public_id);
 
-        return back()->with('status', 'Webhook re-queued.');
+        return back()->with('status', __('Webhook re-queued.'));
     }
 }

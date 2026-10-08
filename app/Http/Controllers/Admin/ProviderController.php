@@ -42,7 +42,7 @@ class ProviderController extends Controller
         $provider->update(['name' => $data['name'], 'config' => $config]);
         $this->audit->log('admin', $request->user()->id, 'provider.updated', null, 'provider', $provider->code, ['config_keys' => array_keys($config)]);
 
-        return redirect()->route('admin.providers.index')->with('status', 'Provider updated.');
+        return redirect()->route('admin.providers.index')->with('status', __('Provider updated.'));
     }
 
     public function toggle(Request $request, GatewayProvider $provider): RedirectResponse
@@ -51,6 +51,6 @@ class ProviderController extends Controller
         $provider->update(['status' => $status]);
         $this->audit->log('admin', $request->user()->id, 'provider.'.($status === RecordStatus::Active ? 'enabled' : 'disabled'), null, 'provider', $provider->code);
 
-        return back()->with('status', "Provider {$status->value}.");
+        return back()->with('status', __('Provider :status.', ['status' => __($status->value)]));
     }
 }

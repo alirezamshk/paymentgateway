@@ -84,6 +84,7 @@ PAYMENTS_NONCE_STORE=database
 QUEUE_WORK_VIA_SCHEDULER=true            # cron runs the webhook queue worker every minute
 
 GATEWAY_SANDBOX_ENABLED=false
+ADMIN_LOCALE=fa                          # admin panel language: fa or en
 ```
 
 If the site is behind Cloudflare or another proxy, set `TRUSTED_PROXIES=*`. Otherwise

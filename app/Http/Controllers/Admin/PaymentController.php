@@ -58,6 +58,6 @@ class PaymentController extends Controller
         $audit->log('admin', $request->user()->id, 'payment.manual_verify', $payment->client_id, 'payment', $payment->public_id);
         $payment = $verification->verify($payment, 'admin');
 
-        return back()->with('status', "Verification run. Status: {$payment->status->value}");
+        return back()->with('status', __('Verification run. Status: :status', ['status' => __($payment->status->value)]));
     }
 }

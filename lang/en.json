@@ -1,0 +1,23 @@
+{
+    "attempt.created": "created",
+    "attempt.requested": "requested",
+    "attempt.redirected": "redirected",
+    "attempt.callback_received": "callback received",
+    "attempt.verified": "verified",
+    "attempt.failed": "failed",
+    "attempt.superseded": "superseded",
+    "webhook.pending": "pending",
+    "webhook.processing": "processing",
+    "webhook.delivered": "delivered",
+    "webhook.failed": "failed",
+    "source.api": "api",
+    "source.callback": "callback",
+    "source.system": "system",
+    "source.admin": "admin",
+    "source.scheduler": "scheduler",
+    "source.webhook": "webhook",
+    "source.customer": "customer",
+    "source.client": "client",
+    "error.INVALID_MERCHANT_CREDENTIALS": "Missing merchant credentials:",
+    "error.PROVIDER_NOT_SUPPORTED": "This payment provider is not supported."
+}

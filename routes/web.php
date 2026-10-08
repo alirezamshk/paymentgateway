@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin;
 use App\Http\Controllers\Web\PaymentPageController;
 use App\Http\Controllers\Web\SandboxPspController;
+use App\Http\Middleware\SetAdminLocale;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn () => response()->view('pay.message', ['title' => config('app.name'), 'message' => 'Central payment service.']));
@@ -16,7 +17,7 @@ if (config('gateways.sandbox_enabled') && ! app()->isProduction()) {
     Route::post('sandbox-psp/{token}', [SandboxPspController::class, 'complete'])->name('sandbox.psp.complete');
 }
 
-Route::prefix('admin')->name('admin.')->group(function () {
+Route::prefix('admin')->name('admin.')->middleware(SetAdminLocale::class)->group(function () {
     Route::get('login', [Admin\AuthController::class, 'showLogin'])->name('login');
     Route::post('login', [Admin\AuthController::class, 'login'])->middleware('throttle:admin-login');
     Route::post('logout', [Admin\AuthController::class, 'logout'])->name('logout');

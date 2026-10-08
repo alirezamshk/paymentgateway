@@ -29,7 +29,7 @@ class AuthController extends Controller
         if (! Auth::attempt($credentials + ['is_admin' => true])) {
             $this->audit->log('admin', null, 'admin.login_failed', metadata: ['email' => $credentials['email']]);
 
-            throw ValidationException::withMessages(['email' => 'Invalid credentials.']);
+            throw ValidationException::withMessages(['email' => __('Invalid credentials.')]);
         }
 
         $request->session()->regenerate();

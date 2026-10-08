@@ -43,10 +43,10 @@ class MerchantController extends Controller
         try {
             $merchant = $this->merchants->create($client, $data, 'admin', $request->user()->id);
         } catch (ApiException $e) {
-            return back()->withInput($request->except('credentials'))->withErrors(['credentials' => $e->getMessage().' '.implode(', ', $e->details['missing'] ?? [])]);
+            return back()->withInput($request->except('credentials'))->withErrors(['credentials' => __('error.'.$e->errorCode).' '.implode(', ', $e->details['missing'] ?? [])]);
         }
 
-        return redirect()->route('admin.clients.show', $client)->with('status', "Merchant {$merchant->name} created.");
+        return redirect()->route('admin.clients.show', $client)->with('status', __('Merchant :name created.', ['name' => $merchant->name]));
     }
 
     public function edit(Merchant $merchant): View
@@ -59,31 +59,31 @@ class MerchantController extends Controller
         try {
             $this->merchants->update($merchant, $this->validated($request, false), 'admin', $request->user()->id);
         } catch (ApiException $e) {
-            return back()->withErrors(['credentials' => $e->getMessage().' '.implode(', ', $e->details['missing'] ?? [])]);
+            return back()->withErrors(['credentials' => __('error.'.$e->errorCode).' '.implode(', ', $e->details['missing'] ?? [])]);
         }
 
-        return redirect()->route('admin.clients.show', $merchant->client)->with('status', 'Merchant updated.');
+        return redirect()->route('admin.clients.show', $merchant->client)->with('status', __('Merchant updated.'));
     }
 
     public function toggle(Request $request, Merchant $merchant): RedirectResponse
     {
         $this->merchants->setStatus($merchant, $merchant->isActive() ? RecordStatus::Disabled : RecordStatus::Active, 'admin', $request->user()->id);
 
-        return back()->with('status', 'Merchant status changed.');
+        return back()->with('status', __('Merchant status changed.'));
     }
 
     public function makeDefault(Request $request, Merchant $merchant): RedirectResponse
     {
         $this->merchants->setDefault($merchant, 'admin', $request->user()->id);
 
-        return back()->with('status', 'Default merchant changed.');
+        return back()->with('status', __('Default merchant changed.'));
     }
 
     public function test(Request $request, Merchant $merchant): RedirectResponse
     {
         $result = $this->merchants->testCredentials($merchant, 'admin', $request->user()->id);
 
-        return back()->with($result->successful ? 'status' : 'error', $result->message);
+        return back()->with($result->successful ? 'status' : 'error', __($result->message));
     }
 
     private function formData(Merchant $merchant): array

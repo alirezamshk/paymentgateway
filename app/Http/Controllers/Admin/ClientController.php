@@ -62,7 +62,7 @@ class ClientController extends Controller
         $client->update($this->validated($request, $client));
         $this->audit->log('admin', $request->user()->id, 'client.updated', $client->id, 'client', $client->public_id);
 
-        return redirect()->route('admin.clients.show', $client)->with('status', 'Client updated.');
+        return redirect()->route('admin.clients.show', $client)->with('status', __('Client updated.'));
     }
 
     public function toggle(Request $request, Client $client): RedirectResponse
@@ -71,7 +71,7 @@ class ClientController extends Controller
         $client->update(['status' => $status]);
         $this->audit->log('admin', $request->user()->id, 'client.'.($status === RecordStatus::Active ? 'enabled' : 'disabled'), $client->id, 'client', $client->public_id);
 
-        return back()->with('status', "Client {$status->value}.");
+        return back()->with('status', __('Client :status.', ['status' => __($status->value)]));
     }
 
     public function issueCredential(Request $request, Client $client): RedirectResponse
@@ -86,7 +86,7 @@ class ClientController extends Controller
         abort_unless($credential->client_id === $client->id, 404);
         $this->clients->revokeCredential($credential, $request->user()->id);
 
-        return back()->with('status', 'Credential revoked.');
+        return back()->with('status', __('Credential revoked.'));
     }
 
     public function rotateWebhookSecret(Request $request, Client $client): RedirectResponse

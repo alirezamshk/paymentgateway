@@ -25,6 +25,7 @@ you need, each with its own `.env`, database and `APP_KEY`:
 | `APP_URL` | Public origin: payment page, PSP callback URLs, API base | - |
 | `APP_NAME` | Brand name on the payment page and admin panel | `Tech-Kala Payments` in `.env.example` |
 | `WEBHOOK_HEADER_PREFIX` | Webhook header names `{prefix}Event`, `{prefix}Delivery-Id`, `{prefix}Timestamp`, `{prefix}Signature` | `X-Webhook-` |
+| `ADMIN_LOCALE` | Admin panel language: `fa` (Persian, RTL) or `en`. The API always answers in English. | `fa` |
 | `WEBHOOK_USER_AGENT` | `User-Agent` of webhook requests | `PaymentService-Webhooks/1.0` |
 
 Pick the domain before going live. Each payment stores its PSP callback URL when it is

@@ -23,6 +23,9 @@ return [
         'IRT' => ['min' => 1_000, 'max' => 200_000_000_000],
     ],
 
+    // Admin panel language: fa (Persian, RTL) or en. The API always answers in English.
+    'admin_locale' => env('ADMIN_LOCALE', 'fa'),
+
     'default_currency' => env('PAYMENTS_DEFAULT_CURRENCY', 'IRR'),
 
     // Unpaid payments (created/pending/redirected) expire after this many minutes.
