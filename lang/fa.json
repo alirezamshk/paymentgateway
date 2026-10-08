@@ -296,5 +296,12 @@
     "Merchant deleted.": "مرچنت حذف شد.",
     "Merchant archived: it is hidden and its credentials were removed; its past payments are kept.": "مرچنت بایگانی شد: دیگر نمایش داده نمی‌شود و اطلاعات حسابش پاک شد؛ پرداخت‌های قبلی‌اش باقی است.",
     "This merchant has :count payment(s) in progress. Disable it and try again once they finish.": "این مرچنت :count پرداخت در جریان دارد. آن را غیرفعال کنید و بعد از تمام شدن این پرداخت‌ها دوباره تلاش کنید.",
-    "This is the default merchant. Make another merchant the default first.": "این مرچنت پیش‌فرض است. ابتدا مرچنت دیگری را پیش‌فرض کنید."
+    "This is the default merchant. Make another merchant the default first.": "این مرچنت پیش‌فرض است. ابتدا مرچنت دیگری را پیش‌فرض کنید.",
+    "Change password": "تغییر رمز عبور",
+    "Current password": "رمز عبور فعلی",
+    "New password": "رمز عبور جدید",
+    "Repeat new password": "تکرار رمز عبور جدید",
+    "At least 12 characters.": "حداقل ۱۲ کاراکتر.",
+    "The current password is incorrect.": "رمز عبور فعلی اشتباه است.",
+    "Password changed. Other sessions were signed out.": "رمز عبور تغییر کرد. نشست‌های دیگر از حساب خارج شدند."
 }

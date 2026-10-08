@@ -15,6 +15,12 @@ return [
     'date' => ':attribute باید تاریخ معتبر باشد.',
     'array' => ':attribute باید آرایه باشد.',
     'prohibited' => 'فیلد :attribute مجاز نیست.',
+    'confirmed' => 'تکرار :attribute با آن یکسان نیست.',
+    'different' => ':attribute جدید باید با :other فرق داشته باشد.',
+    'min' => [
+        'string' => ':attribute باید حداقل :min کاراکتر باشد.',
+        'numeric' => ':attribute نباید کمتر از :min باشد.',
+    ],
     'max' => [
         'string' => ':attribute نباید بیشتر از :max کاراکتر باشد.',
         'numeric' => ':attribute نباید بیشتر از :max باشد.',
@@ -27,6 +33,7 @@ return [
         'return_url' => 'آدرس بازگشت',
         'email' => 'ایمیل',
         'password' => 'رمز عبور',
+        'current_password' => 'رمز عبور فعلی',
         'provider' => 'درگاه',
         'client' => 'سایت',
         'config' => 'تنظیمات',
