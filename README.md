@@ -86,13 +86,17 @@ HTTP responses).
 
 | Provider | Adapter | Settlement | Automated tests | Verified against real PSP |
 |----------|---------|------------|-----------------|---------------------------|
-| ZarinPal (REST v4) | `ZarinPalGateway` | not required | yes (faked HTTP) | **no** |
-| Sepehr / Saderat | `SepehrGateway` | not required (Advice) | yes (faked HTTP) | **no** |
+| ZarinPal (REST v4) | `ZarinPalGateway` | not required | yes (faked HTTP) | sandbox only (2026-10-08) |
+| Sepehr / Saderat | `SepehrGateway` | not required (Advice) | yes (faked HTTP) | **yes - live payment verified (2026-10-08)** |
 | Asan Pardakht (IPG REST v1) | `AsanPardakhtGateway` | yes (`/v1/Settlement`) | yes (faked HTTP) | **no** |
 | Sepordeh | `SepordehGateway` | not required | yes (faked HTTP) | **no** |
 | Sandbox (internal) | `SandboxGateway` | - | yes (end-to-end) | n/a |
 
-> **None of the PSP integrations is production-ready yet.** Each adapter follows the PSP's
+> **Sepehr** has completed a real production payment end to end (token → bank page → callback →
+> Advice → paid) on `tech-kala.com`. Sepehr requires the server IP to be registered and the payment page
+> to send the registered domain as Referer (handled: the payment page uses `Referrer-Policy: origin`).
+>
+> **The other PSP integrations are not production-ready yet.** Each adapter follows the PSP's
 > published API and is covered by automated tests, but none has been run against the real PSP
 > sandbox or production environment. Before you enable a provider (they are seeded as
 > *disabled*), run a real test transaction with that PSP's test credentials. Endpoints can be
