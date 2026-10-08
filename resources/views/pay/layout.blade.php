@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="referrer" content="no-referrer">
+    <meta name="referrer" content="origin">
     <title>@yield('title', 'پرداخت') - {{ config('app.name') }}</title>
     <style>
         :root { --bg:#f5f6f8; --card:#fff; --text:#1d2330; --muted:#6b7385; --accent:#1f6feb; --ok:#1a7f37; --bad:#cf222e; --border:#e3e6ec; }

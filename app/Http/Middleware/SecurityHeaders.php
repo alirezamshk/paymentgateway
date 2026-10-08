@@ -15,7 +15,10 @@ class SecurityHeaders
 
         $headers->set('X-Content-Type-Options', 'nosniff');
         $headers->set('X-Frame-Options', 'DENY');
-        $headers->set('Referrer-Policy', 'no-referrer');
+        // Pages may relax this (the payment page sends its origin, which some PSPs require).
+        if (! $headers->has('Referrer-Policy')) {
+            $headers->set('Referrer-Policy', 'no-referrer');
+        }
         $headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
         $headers->set('Cross-Origin-Opener-Policy', 'same-origin');
 

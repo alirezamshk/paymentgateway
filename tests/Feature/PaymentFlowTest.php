@@ -27,6 +27,9 @@ class PaymentFlowTest extends TestCase
         // Payment page shows site name / amount and forwards to PSP.
         $page = $this->get("/pay/{$id}")->assertOk()->assertSee('Site-A')->assertSee('500,000');
         $this->assertStringContainsString("script-src 'nonce-", $page->headers->get('Content-Security-Policy'));
+        // PSPs such as Sepehr check the Referer domain; only the origin is sent.
+        $this->assertSame('origin', $page->headers->get('Referrer-Policy'));
+        $this->assertSame('no-referrer', $this->get('/admin/login')->headers->get('Referrer-Policy'));
         $this->assertSame(PaymentStatus::Redirected, Payment::where('public_id', $id)->first()->status);
 
         $token = Payment::where('public_id', $id)->first()->token;

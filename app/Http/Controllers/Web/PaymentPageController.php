@@ -64,6 +64,9 @@ class PaymentPageController extends Controller
         return response()
             ->view('pay.show', ['payment' => $payment, 'redirect' => $redirect, 'nonce' => $nonce])
             ->header('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-{$nonce}'; img-src 'self' data:; form-action {$formAction}; frame-ancestors 'none'; base-uri 'none'")
-            ->header('Cache-Control', 'no-store');
+            ->header('Cache-Control', 'no-store')
+            // Some PSPs (e.g. Sepehr) reject customers without a Referer from the registered
+            // domain. Send only the origin, never the payment URL.
+            ->header('Referrer-Policy', 'origin');
     }
 }
