@@ -8,8 +8,9 @@ namespace App\Security;
  * canonical = METHOD + "\n" + PATH + "\n" + TIMESTAMP + "\n" + NONCE + "\n" + hex(sha256(BODY))
  * signature = hex(hmac_sha256(client_secret, canonical))
  *
- * PATH is the request path with a leading slash, followed by "?" and the raw query string
- * when one is present (e.g. "/api/v1/payments/pay_01j...").
+ * PATH is the full request path with a leading slash (including the installation
+ * sub-directory, if any), followed by "?" and the raw query string when one is present
+ * (e.g. "/api/v1/payments/pay_01j..." or "/payment/api/v1/payments/pay_01j...").
  */
 final class RequestSigner
 {

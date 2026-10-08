@@ -48,7 +48,9 @@ class AuthenticateClient
 
         // Compute a signature even for unknown keys so timing does not reveal key existence.
         $secret = $credential?->secret() ?? str_repeat('0', 64);
-        $pathWithQuery = $request->getPathInfo().(($qs = $request->server('QUERY_STRING')) ? '?'.$qs : '');
+        // Full path as requested by the client, including the base path when the app is
+        // installed in a sub-directory (e.g. /payment/api/v1/payments).
+        $pathWithQuery = $request->getBaseUrl().$request->getPathInfo().(($qs = $request->server('QUERY_STRING')) ? '?'.$qs : '');
         $expected = RequestSigner::sign($secret, $request->getMethod(), $pathWithQuery, $timestamp, $nonce, $request->getContent());
 
         if ($credential === null || ! RequestSigner::matches($expected, $signature)) {

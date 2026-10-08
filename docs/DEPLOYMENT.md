@@ -1,5 +1,7 @@
 # Deployment
 
+> On cPanel or other shared hosting, follow [CPANEL.md](CPANEL.md) instead.
+
 ## Requirements
 
 * PHP 8.2+ with `pdo_mysql`, `openssl`, `mbstring`, `intl`, `redis` (phpredis), `curl`

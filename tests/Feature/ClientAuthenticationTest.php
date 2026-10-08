@@ -5,6 +5,9 @@ namespace Tests\Feature;
 use App\Models\AuditLog;
 use App\Security\RequestSigner;
 use App\Services\ClientService;
+use Illuminate\Contracts\Http\Kernel;
+use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class ClientAuthenticationTest extends TestCase
@@ -144,5 +147,34 @@ class ClientAuthenticationTest extends TestCase
         $this->assertStringNotContainsString($auth['secret'], $row->encrypted_secret);
         $this->assertStringNotContainsString($auth['webhook_secret'], $clientRow->webhook_secret);
         $this->assertSame($auth['secret'], $auth['credential']->fresh()->secret());
+    }
+
+    public function test_signature_covers_full_path_when_installed_in_subdirectory(): void
+    {
+        $auth = $this->makeClient();
+        $this->makeMerchant($auth['client']);
+
+        $send = function (string $signedPath) use ($auth) {
+            $timestamp = (string) time();
+            $nonce = Str::random(24);
+            $request = Request::create('https://pay.example.test/payment/api/v1/merchants', 'GET', server: [
+                'SCRIPT_FILENAME' => public_path('index.php'),
+                'SCRIPT_NAME' => '/payment/index.php',
+                'PHP_SELF' => '/payment/index.php',
+            ]);
+            $request->headers->add([
+                'Accept' => 'application/json',
+                'X-Client-Id' => $auth['credential']->key_id,
+                'X-Timestamp' => $timestamp,
+                'X-Nonce' => $nonce,
+                'X-Signature' => RequestSigner::sign($auth['secret'], 'GET', $signedPath, $timestamp, $nonce, ''),
+            ]);
+
+            return $this->app->make(Kernel::class)->handle($request);
+        };
+
+        $this->assertSame('/payment', Request::create('https://x/payment/api/v1/merchants', 'GET', server: ['SCRIPT_FILENAME' => public_path('index.php'), 'SCRIPT_NAME' => '/payment/index.php', 'PHP_SELF' => '/payment/index.php'])->getBaseUrl());
+        $this->assertSame(200, $send('/payment/api/v1/merchants')->getStatusCode());
+        $this->assertSame(401, $send('/api/v1/merchants')->getStatusCode());
     }
 }

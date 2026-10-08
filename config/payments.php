@@ -34,6 +34,10 @@ return [
     // Allow non-HTTPS return/webhook URLs (local development only).
     'allow_insecure_urls' => (bool) env('PAYMENTS_ALLOW_INSECURE_URLS', false),
 
+    // Run the queue worker from the scheduler (cron) instead of a long-running process.
+    // Use on shared hosting / cPanel where Supervisor is not available.
+    'queue_via_scheduler' => (bool) env('QUEUE_WORK_VIA_SCHEDULER', false),
+
     'webhooks' => [
         'timeout' => (int) env('WEBHOOK_TIMEOUT', 10),
         'max_attempts' => (int) env('WEBHOOK_MAX_ATTEMPTS', 8),

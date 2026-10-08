@@ -37,7 +37,8 @@ canonical = METHOD \n PATH \n TIMESTAMP \n NONCE \n hex(sha256(BODY))
 X-Signature = hex(hmac_sha256(client_secret, canonical))
 ```
 
-* `PATH` is the path with a leading slash, e.g. `/api/v1/payments`. If there is a query
+* `PATH` is the full path with a leading slash, e.g. `/api/v1/payments`. If the service is
+  installed in a sub-directory, include it, e.g. `/payment/api/v1/payments`. If there is a query
   string, append `?` and the query string exactly as sent.
 * `TIMESTAMP` is Unix seconds. The server accepts ±300 seconds, so keep your clock in sync (NTP).
 * `NONCE` must be unique for every request (16-64 chars `[A-Za-z0-9_-]`).

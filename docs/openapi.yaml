@@ -20,7 +20,7 @@ info:
 
     ```
     canonical = METHOD + "\n"
-              + PATH + "\n"            # e.g. /api/v1/payments  (+ "?" + raw query string if any)
+              + PATH + "\n"            # full path, e.g. /api/v1/payments (+ "?" + raw query string if any)
               + X-Timestamp + "\n"
               + X-Nonce + "\n"
               + hex(SHA256(raw request body))   # SHA256 of "" for empty bodies

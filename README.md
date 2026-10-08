@@ -41,6 +41,7 @@ PHP 8.2+ · Laravel 11 · MySQL/MariaDB · Redis (cache, nonces, queue) · PHPUn
 | [docs/INTEGRATION.md](docs/INTEGRATION.md) | For client sites: signing requests, creating payments, verifying webhooks (PHP/Node samples) |
 | [docs/openapi.yaml](docs/openapi.yaml) | OpenAPI 3.1 reference: auth, payments, merchants, callbacks, webhooks, errors, idempotency |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Module layout, state machine, concurrency model, money convention, adding a PSP |
+| [docs/CPANEL.md](docs/CPANEL.md) | Step-by-step install on cPanel / shared hosting (subdomain or sub-directory, no Redis/Supervisor) |
 | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Production setup: database, migrations, queue worker, scheduler, Redis, HTTPS, backups, logs |
 
 ## Quick start (local)
