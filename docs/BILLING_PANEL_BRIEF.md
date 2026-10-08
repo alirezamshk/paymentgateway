@@ -60,9 +60,15 @@ One panel = one Tech-Kala client: **one** Client ID / Secret, **one** Webhook Se
 Webhook URL, no matter how many gateways it offers. Each gateway is a *merchant* (`mer_...`) that
 Tech-Kala adds under that same client. Do not ask for a second key pair per gateway.
 
-* `GET {BASE}/api/v1/merchants` lists them (`merchant_id`, `name`, `provider`, `is_default`,
-  `status`). Offer the active ones as choices (e.g. a "Gateway" select on the settings screen, or
-  let the customer pick on the invoice).
+* **Settings design (required):** store the connection (Base URL, Client ID, Client Secret,
+  Webhook Secret) **once**, on its own "Tech-Kala connection" screen. Gateways must NOT be separate
+  connection entries that each ask for keys: adding a gateway later must never require re-entering
+  or resetting any secret (secrets are shown by Tech-Kala only once, so re-entry forces a reset).
+* Gateways are loaded, not typed: a "Sync gateways" button (and/or on each checkout) calls
+  `GET {BASE}/api/v1/merchants`, which lists them (`merchant_id`, `name`, `provider`,
+  `is_default`, `status`). Store only the active ones; the administrator may rename, reorder or
+  hide them locally. When Tech-Kala adds a gateway, one sync shows it, with no other change.
+  Offer them as choices (e.g. let the customer pick on the invoice).
 * Send the chosen `"merchant_id": "mer_..."` in the create-payment body (section 3). Without it,
   the client's default merchant is used.
 * Webhooks for every gateway arrive at the same URL, signed with the same secret; the payload's
