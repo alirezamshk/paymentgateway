@@ -46,6 +46,8 @@ PHP 8.2+ · Laravel 11 · MySQL/MariaDB · Redis (cache, nonces, queue) · PHPUn
 | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Production setup: database, migrations, queue worker, scheduler, Redis, HTTPS, backups, logs |
 | [docs/PROVIDERS.md](docs/PROVIDERS.md) | Per-PSP notes: credentials, endpoints, requirements (IP registration, Referer), verified status |
 | [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | Errors met during installation and operation, with causes and fixes |
+| [docs/CLIENT_AGENT_BRIEF.md](docs/CLIENT_AGENT_BRIEF.md) | Self-contained task brief for the developer/coding agent integrating a client website (contract, security rules, test vectors, acceptance criteria) |
+| [docs/BILLING_PANEL_BRIEF.md](docs/BILLING_PANEL_BRIEF.md) | Same, for a billing panel that creates invoices and sends them for payment (invoice mapping, retries, settings screen) |
 | [docs/fa/README.md](docs/fa/README.md) | راهنمای فارسی: نصب، کار با پنل، اتصال سایت‌ها، خطاهای رایج |
 | [scripts/test-client.php](scripts/test-client.php) | Dependency-free client for smoke-testing a deployment (create / status / verify / cancel) |
 
@@ -96,8 +98,11 @@ HTTP responses).
 | Sepordeh | `SepordehGateway` | not required | yes (faked HTTP) | **no** |
 | Sandbox (internal) | `SandboxGateway` | - | yes (end-to-end) | n/a |
 
-> **Sepehr** has completed a real production payment end to end (token → bank page → callback →
-> Advice → paid) on `tech-kala.com`. Sepehr requires the server IP to be registered and the payment page
+> **Sepehr** has completed real production payments end to end (token → bank page → callback →
+> Advice → paid) on `tech-kala.com`, including a full client round trip from an external billing
+> panel (create → payment page → bank → verify → signed `payment.succeeded` webhook delivered →
+> invoice marked paid) on 2026-10-08. A customer cancellation at the bank was handled as `failed`
+> with a `payment.failed` webhook. Sepehr requires the server IP to be registered and the payment page
 > to send the registered domain as Referer (handled: the payment page uses `Referrer-Policy: origin`).
 >
 > **The other PSP integrations are not production-ready yet.** Each adapter follows the PSP's

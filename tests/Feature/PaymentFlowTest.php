@@ -25,7 +25,8 @@ class PaymentFlowTest extends TestCase
         $id = $this->signed($auth, 'POST', '/api/v1/payments', $this->paymentBody(['order_id' => 'ORD-10001']))->json('payment_id');
 
         // Payment page shows site name / amount and forwards to PSP.
-        $page = $this->get("/pay/{$id}")->assertOk()->assertSee('Site-A')->assertSee('500,000');
+        // While payable, the page only shows a short 'redirecting' message (no payment details).
+        $page = $this->get("/pay/{$id}")->assertOk()->assertSee('در حال انتقال به درگاه بانک')->assertDontSee('Site-A')->assertDontSee('500,000');
         $this->assertStringContainsString("script-src 'nonce-", $page->headers->get('Content-Security-Policy'));
         // PSPs such as Sepehr check the Referer domain; only the origin is sent.
         $this->assertSame('origin', $page->headers->get('Referrer-Policy'));

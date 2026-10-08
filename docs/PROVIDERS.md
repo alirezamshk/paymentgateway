@@ -6,7 +6,7 @@ merchant credentials are entered per merchant and stored encrypted.
 
 | Provider | Code | Credentials on the merchant | Status |
 |----------|------|-----------------------------|--------|
-| Sepehr (Bank Saderat) | `sepehr` | `terminal_identifier` | **Live payment verified** (2026-10-08) |
+| Sepehr (Bank Saderat) | `sepehr` | `terminal_identifier` | **Live payments verified** (2026-10-08), incl. billing-panel round trip and webhooks |
 | ZarinPal | `zarinpal` | `merchant_identifier` (36-char merchant_id) | Sandbox verified (2026-10-08) |
 | Sepordeh | `sepordeh` | `merchant_identifier` (merchant key) | Automated tests only |
 | Asan Pardakht | `asanpardakht` | `merchant_identifier` (merchantConfigurationId), `username`, `password` | Automated tests only |
