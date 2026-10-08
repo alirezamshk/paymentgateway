@@ -69,4 +69,61 @@ final class Display
 
         return [$jy, 7 + intdiv($days - 186, 30), 1 + (($days - 186) % 30)];
     }
+
+    /**
+     * Jalali (Solar Hijri) → Gregorian.
+     *
+     * @return array{0: int, 1: int, 2: int}
+     */
+    public static function toGregorian(int $jy, int $jm, int $jd): array
+    {
+        $jy += 1595;
+        $days = -355668 + (365 * $jy) + (intdiv($jy, 33) * 8) + intdiv(($jy % 33) + 3, 4) + $jd + ($jm < 7 ? ($jm - 1) * 31 : (($jm - 7) * 30) + 186);
+        $gy = 400 * intdiv($days, 146097);
+        $days %= 146097;
+
+        if ($days > 36524) {
+            $gy += 100 * intdiv(--$days, 36524);
+            $days %= 36524;
+
+            if ($days >= 365) {
+                $days++;
+            }
+        }
+
+        $gy += 4 * intdiv($days, 1461);
+        $days %= 1461;
+
+        if ($days > 365) {
+            $gy += intdiv($days - 1, 365);
+            $days = ($days - 1) % 365;
+        }
+
+        $gd = $days + 1;
+        $leap = ($gy % 4 === 0 && $gy % 100 !== 0) || $gy % 400 === 0;
+        $monthDays = [0, 31, $leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
+        for ($gm = 0; $gm < 13 && $gd > $monthDays[$gm]; $gm++) {
+            $gd -= $monthDays[$gm];
+        }
+
+        return [$gy, $gm, $gd];
+    }
+
+    public const JALALI_MONTHS = ['فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور', 'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند'];
+
+    /** Compact amount for chart axes: 1.2M / ۱٫۲ میلیون style (latin digits). */
+    public static function compact(int $value): string
+    {
+        $fa = app()->getLocale() === 'fa';
+        $units = $fa ? [[1e9, ' میلیارد'], [1e6, ' میلیون'], [1e3, ' هزار']] : [[1e9, 'B'], [1e6, 'M'], [1e3, 'K']];
+
+        foreach ($units as [$size, $suffix]) {
+            if (abs($value) >= $size) {
+                return rtrim(rtrim(number_format($value / $size, 1, '.', ''), '0'), '.').$suffix;
+            }
+        }
+
+        return (string) $value;
+    }
 }

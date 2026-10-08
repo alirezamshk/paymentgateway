@@ -19,6 +19,7 @@
         'refresh' => '<path d="M20 11a8 8 0 0 0-14.3-4.9L4 8M4 4v4h4"/><path d="M4 13a8 8 0 0 0 14.3 4.9L20 16M20 20v-4h-4"/>',
         'external' => '<path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
         'key' => '<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3"/>',
+        'chart' => '<path d="M4 20V10M10 20V4M16 20v-7M21 20H3"/>',
         'menu' => '<path d="M4 6h16M4 12h16M4 18h16"/>',
     ];
 @endphp

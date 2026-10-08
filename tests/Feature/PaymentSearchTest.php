@@ -87,7 +87,7 @@ class PaymentSearchTest extends TestCase
             'metadata' => ['plan' => 'gold', 'invoice_id' => 777],
         ]))->json('payment_id');
 
-        $this->actingAs(\App\Models\User::factory()->create(['is_admin' => true]))
+        $this->actingAs(User::factory()->create(['is_admin' => true]))
             ->get("/admin/payments/{$id}")->assertOk()
             ->assertSee('INV-777')->assertSee('Wallet top-up')->assertSee('09121234567')->assertSee('ali_m')
             ->assertSee('&quot;plan&quot;: &quot;gold&quot;', false);

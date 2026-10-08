@@ -3,6 +3,7 @@
     $nav = [
         ['admin.dashboard', 'admin.dashboard', 'dashboard', 'Dashboard'],
         ['admin.payments.index', 'admin.payments.*', 'payments', 'Payments'],
+        ['admin.reports.sales', 'admin.reports.*', 'chart', 'Sales report'],
         ['admin.settlements.index', 'admin.settlements.*', 'settlements', 'Settlements'],
         ['admin.clients.index', 'admin.clients.*', 'sites', 'Clients'],
         ['admin.merchants.index', 'admin.merchants.*', 'merchants', 'Merchants'],
@@ -26,6 +27,8 @@
             --success:#15803d; --success-soft:#e8f6ee; --danger:#dc2626; --danger-soft:#fdecec; --warning:#b45309; --warning-soft:#fdf3e2;
             --info:#0369a1; --info-soft:#e6f3fa;
             --sidebar:#0b1222; --sidebar-2:#141d33; --sidebar-text:#cbd5e1; --sidebar-muted:#7c8aa5;
+            --series-0:#9a9893; --series-1:#2a78d6; --series-2:#eb6834; --series-3:#1baf7a; --series-4:#eda100; --series-5:#e87ba4; --series-6:#008300; --series-7:#4a3aa7;
+            --grid:#e8ecf2;
             --radius:12px; --shadow:0 1px 2px rgba(15,23,42,.05), 0 1px 1px rgba(15,23,42,.03);
             color-scheme: light;
         }
@@ -36,6 +39,8 @@
                 --success:#4ade80; --success-soft:#11291c; --danger:#f87171; --danger-soft:#2c1517; --warning:#fbbf24; --warning-soft:#2b2210;
                 --info:#38bdf8; --info-soft:#0f2433;
                 --sidebar:#070b16; --sidebar-2:#111a2e;
+                --series-0:#6f6e69; --series-1:#3987e5; --series-2:#d95926; --series-3:#199e70; --series-4:#c98500; --series-5:#d55181; --series-6:#008300; --series-7:#9085e9;
+                --grid:#1d2840;
                 --shadow:none; color-scheme: dark;
             }
         }
@@ -84,7 +89,8 @@
         .stat .ic { width:40px; height:40px; border-radius:10px; display:grid; place-items:center; background:var(--primary-soft); color:var(--primary-text); }
         .stat .ic.success { background:var(--success-soft); color:var(--success); } .stat .ic.danger { background:var(--danger-soft); color:var(--danger); } .stat .ic.warning { background:var(--warning-soft); color:var(--warning); }
         .stat .label { color:var(--muted); font-size:12.5px; }
-        .stat .value { font-size:21px; font-weight:700; line-height:1.3; }
+        .stat .value { font-size:21px; font-weight:700; line-height:1.3; white-space:nowrap; }
+        .stat > div:last-child { min-width:0; }
         .stat .sub { color:var(--muted); font-size:12px; }
 
         .table-wrap { overflow-x:auto; }
@@ -142,6 +148,21 @@
         .timeline li { display:grid; grid-template-columns:150px 1fr; gap:14px; padding:10px 20px; border-bottom:1px solid var(--border); }
         .timeline li:last-child { border-bottom:0; }
         .timeline .ev { font-weight:600; }
+
+        /* Charts */
+        .chart { width:100%; height:auto; display:block; direction:ltr; }
+        .chart text { fill:var(--muted); font-size:12px; font-family:inherit; }
+        .chart .grid { stroke:var(--grid); stroke-width:1; }
+        .chart .axis { stroke:var(--border); stroke-width:1; }
+        .chart .hit { fill:transparent; } .chart .hit:hover { fill:var(--surface-2); }
+        .legend { display:flex; flex-wrap:wrap; gap:8px 18px; padding:12px 20px 0; }
+        .legend .item { display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text-2); }
+        .legend .sw { width:12px; height:12px; border-radius:3px; flex:none; }
+        .legend .val { color:var(--muted); font-size:12px; }
+        .seg-tabs { display:inline-flex; border:1px solid var(--border); border-radius:10px; padding:3px; background:var(--surface-2); }
+        .seg-tabs a { padding:5px 14px; border-radius:8px; color:var(--muted); font-weight:600; font-size:13px; }
+        .seg-tabs a:hover { text-decoration:none; color:var(--text); }
+        .seg-tabs a.on { background:var(--surface); color:var(--text); box-shadow:var(--shadow); }
 
         /* Auth page */
         .auth { min-height:100vh; display:grid; place-items:center; padding:24px; background:radial-gradient(1200px 600px at 10% -10%, var(--primary-soft), transparent), var(--bg); }
