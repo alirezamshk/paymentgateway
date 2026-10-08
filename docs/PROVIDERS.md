@@ -8,12 +8,12 @@ merchant credentials are entered per merchant and stored encrypted.
 |----------|------|-----------------------------|--------|
 | Sepehr (Bank Saderat) | `sepehr` | `terminal_identifier` | **Live payments verified** (2026-10-08), incl. billing-panel round trip and webhooks |
 | ZarinPal | `zarinpal` | `merchant_identifier` (36-char merchant_id) | Sandbox verified (2026-10-08) |
-| Sepordeh | `sepordeh` | `merchant_identifier` (merchant key) | Automated tests only |
+| Sepordeh | `sepordeh` | `merchant_identifier` (merchant key) | **Live payment verified** (2026-10-08) |
 | Asan Pardakht | `asanpardakht` | `merchant_identifier` (merchantConfigurationId), `username`, `password` | Automated tests only |
 | Sandbox | `sandbox` | none | Internal fake PSP, refused in production |
 
 "Automated tests only" means the adapter follows the published API (and, for Sepordeh and
-Sepehr, was cross-checked against the open-source `shetabit/multipay` drivers) but has not
+Sepehr, was originally cross-checked against the open-source `shetabit/multipay` drivers) but has not
 completed a real transaction yet. Run one low-value payment before relying on it.
 
 ## General requirements

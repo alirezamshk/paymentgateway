@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin;
+use App\Http\Controllers\Web\DocsController;
 use App\Http\Controllers\Web\PaymentPageController;
 use App\Http\Controllers\Web\SandboxPspController;
 use App\Http\Middleware\SetAdminLocale;
@@ -16,6 +17,11 @@ if (config('gateways.sandbox_enabled') && ! app()->isProduction()) {
     Route::get('sandbox-psp/{token}', [SandboxPspController::class, 'show'])->name('sandbox.psp.show');
     Route::post('sandbox-psp/{token}', [SandboxPspController::class, 'complete'])->name('sandbox.psp.complete');
 }
+
+Route::middleware(SetAdminLocale::class)->group(function () {
+    Route::get('docs', [DocsController::class, 'show'])->name('docs');
+    Route::get('docs/openapi.yaml', [DocsController::class, 'openapi'])->name('docs.openapi');
+});
 
 Route::prefix('admin')->name('admin.')->middleware(SetAdminLocale::class)->group(function () {
     Route::get('login', [Admin\AuthController::class, 'showLogin'])->name('login');

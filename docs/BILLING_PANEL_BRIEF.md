@@ -54,6 +54,63 @@ Tech-Kala's administrator must register for this panel:
   CSRF-exempt, no login)
 * **Default return URL**, e.g. `https://<panel-domain>/payments/techkala/return` (GET, HTTPS)
 
+### Several gateways (optional)
+
+One panel = one Tech-Kala client: **one** Client ID / Secret, **one** Webhook Secret and **one**
+Webhook URL, no matter how many gateways it offers. Each gateway is a *merchant* (`mer_...`) that
+Tech-Kala adds under that same client. Do not ask for a second key pair per gateway.
+
+* **Settings design (required):** store the connection (Base URL, Client ID, Client Secret,
+  Webhook Secret) **once**, on its own "Tech-Kala connection" screen. Gateways must NOT be separate
+  connection entries that each ask for keys: adding a gateway later must never require re-entering
+  or resetting any secret (secrets are shown by Tech-Kala only once, so re-entry forces a reset).
+* Gateways are loaded, not typed: a "Sync gateways" button (and/or on each checkout) calls
+  `GET {BASE}/api/v1/merchants`, which lists them (`merchant_id`, `name`, `provider`,
+  `is_default`, `status`). Store only the active ones; the administrator may rename, reorder or
+  hide them locally. When Tech-Kala adds a gateway, one sync shows it, with no other change.
+  Offer them as choices (e.g. let the customer pick on the invoice).
+
+  Response of `GET {BASE}/api/v1/merchants` (`200`; credentials are never returned):
+
+  ```json
+  {
+    "data": [
+      {
+        "merchant_id": "mer_01m4c8x2n7k5q9w3e6r1t4y8u0",
+        "name": "Sepehr",
+        "provider": "sepehr",
+        "status": "active",
+        "is_default": true,
+        "configured_credentials": ["terminal_id"],
+        "created_at": "2026-10-01T09:12:00Z",
+        "updated_at": "2026-10-01T09:12:00Z"
+      },
+      {
+        "merchant_id": "mer_01m4d1a7b3c9d5e2f8g4h6j0k2",
+        "name": "ZarinPal",
+        "provider": "zarinpal",
+        "status": "disabled",
+        "is_default": false,
+        "configured_credentials": ["merchant_identifier"],
+        "created_at": "2026-10-05T11:40:00Z",
+        "updated_at": "2026-10-06T08:02:00Z"
+      }
+    ]
+  }
+  ```
+
+  Store `merchant_id` (stable) and show `name` (may be renamed). Offer only `"status": "active"`.
+* Create a payment on a chosen gateway by adding `"merchant_id": "mer_..."` to the
+  `POST {BASE}/api/v1/payments` body. Unknown/disabled → `422 MERCHANT_NOT_FOUND`.
+* Send the chosen `"merchant_id": "mer_..."` in the create-payment body (section 3). Without it,
+  the client's default merchant is used.
+* Webhooks for every gateway arrive at the same URL, signed with the same secret; the payload's
+  `merchant_id` / `provider` tell you which gateway was used.
+* After a **failed** payment, `new_attempt: true` may carry a different `merchant_id` to retry on
+  another gateway (without `merchant_id` the retry uses the default merchant, so send it every
+  time). While a payment is still pending it cannot switch gateway; wait for it to fail or expire,
+  or create a new payment with a new `order_id` (e.g. `INV-1001-2`).
+
 ## 2. Authentication: signing every API request (HMAC-SHA256)
 
 Every request to `{BASE}/api/v1/...` must include four headers:
@@ -115,6 +172,7 @@ Request body:
 | `currency` | string | no | `IRR` (Rial, default) or `IRT` (Toman). Use `IRR`. |
 | `description` | string | no | Max 500 chars, shown to the customer. |
 | `return_url` | string | no | HTTPS. Defaults to the Return URL registered for this site. |
+| `merchant_id` | string | no | `mer_...` from `GET /api/v1/merchants` (see "Several gateways"). Omitted → the default gateway. |
 | `metadata` | object | no | Max 20 keys / 4 KB, returned as-is. |
 | `customer` | object | no (recommended) | `{"mobile": "09121234567", "username": "...", "name": "..."}`: the payer. Lets Tech-Kala's support find payments by mobile / username. Mobile must be an Iranian mobile number (`+98`, `0098` and Persian digits are accepted). |
 

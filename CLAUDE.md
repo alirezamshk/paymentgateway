@@ -32,6 +32,7 @@ Every feature ships with tests in `tests/Feature` (gateways use `Http::fake`).
 | Settlement ledger | `app/Settlement/LedgerService.php`, `Admin/SettlementController` |
 | Sales report + chart | `app/Reports/SalesReport.php`, `app/Reports/StackedColumnChart.php`, `Admin/ReportController` |
 | Admin UI (fa/en) | `resources/views/admin/*`, `lang/fa.json`, `app/Http/Middleware/SetAdminLocale.php`, `app/Support/Display.php` (Jalali, Tehran time) |
+| Developer docs page (`/docs`, public unless `PAYMENTS_PUBLIC_DOCS=false`) | `app/Http/Controllers/Web/DocsController.php`, `resources/views/docs/index.blade.php` — keep in sync with `docs/openapi.yaml` |
 | Customer pay page | `app/Http/Controllers/Web/PaymentPageController.php` (auto-redirect, `Referrer-Policy: origin` for Sepehr) |
 
 Admin UI conventions: every new string goes in `lang/fa.json` (English is the key); the admin CSP
@@ -46,15 +47,16 @@ in `<span class="ltr">` for RTL.
 * Server deploys from `main`. Work happens on a feature branch, merged to `main`, then on the
   server: `git pull && php artisan migrate --force && php artisan config:cache && php artisan route:cache && php artisan view:cache`
   (first deploy of the ledger also needs `php artisan settlement:backfill`).
-* Verified live: Sepehr (real payment + v2moon billing-panel round trip with webhooks),
-  ZarinPal sandbox. Not yet verified live: Sepordeh, AsanPardakht, ZarinPal production.
+* Verified live: Sepehr (real payment + v2moon billing-panel round trip with webhooks), Sepordeh
+  (real payment), ZarinPal sandbox. Not yet verified live: AsanPardakht, ZarinPal production.
 
 ## Integrator docs
 `docs/INTEGRATION.md` (developers), `docs/CLIENT_AGENT_BRIEF.md` and `docs/BILLING_PANEL_BRIEF.md`
 (hand-off briefs for agents building the client side), `docs/openapi.yaml` (API reference).
 
 ## Open follow-ups
-* Give v2moon its own client (it currently uses the test client's keys) and have it send
-  `customer` / `metadata`.
+* v2moon uses client `cli_01m4d25bsahcpjrj3te9714rds` (formerly "test-site") with one active key and
+  the merchant list from `GET /api/v1/merchants`; it should also send `customer` / `metadata`.
+* The `ZarinPal Sandbox` merchant on that client must stay disabled (sandbox marks payments paid).
 * Disable the test client and remove `tk-test.php` / legacy `sepehr2` files on the main site.
-* Live-test Sepordeh and AsanPardakht with a small amount before enabling them.
+* Live-test AsanPardakht with a small amount before enabling it.

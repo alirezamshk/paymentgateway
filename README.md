@@ -96,7 +96,7 @@ HTTP responses).
 | ZarinPal (REST v4) | `ZarinPalGateway` | not required | yes (faked HTTP) | sandbox only (2026-10-08) |
 | Sepehr / Saderat | `SepehrGateway` | not required (Advice) | yes (faked HTTP) | **yes - live payment verified (2026-10-08)** |
 | Asan Pardakht (IPG REST v1) | `AsanPardakhtGateway` | yes (`/v1/Settlement`) | yes (faked HTTP) | **no** |
-| Sepordeh | `SepordehGateway` | not required | yes (faked HTTP) | **no** |
+| Sepordeh | `SepordehGateway` | not required | yes (faked HTTP) | **yes - live payment verified (2026-10-08)** |
 | Sandbox (internal) | `SandboxGateway` | - | yes (end-to-end) | n/a |
 
 > **Sepehr** has completed real production payments end to end (token → bank page → callback →

@@ -10,7 +10,7 @@
 <div class="card">
     <div class="card-body flush"><div class="table-wrap">
     <table>
-        <thead><tr><th>{{ __('Name') }}</th><th>{{ __('Slug') }}</th><th>{{ __('Status') }}</th><th class="num">{{ __('Merchants') }}</th><th class="num">{{ __('Payments') }}</th><th>{{ __('Commission') }}</th><th>{{ __('Webhook URL') }}</th></tr></thead>
+        <thead><tr><th>{{ __('Name') }}</th><th>{{ __('Slug') }}</th><th>{{ __('Status') }}</th><th class="num">{{ __('Merchants') }}</th><th class="num">{{ __('Payments') }}</th><th>{{ __('Commission') }}</th><th>{{ __('Webhook URL') }}</th><th></th></tr></thead>
         <tbody>
         @forelse($clients as $c)
             <tr>
@@ -19,9 +19,10 @@
                 <td class="num">{{ $c->merchants_count }}</td><td class="num">{{ number_format($c->payments_count) }}</td>
                 <td>@include('admin.settlements._commission', ['client' => $c])</td>
                 <td class="small ltr">{{ \Illuminate\Support\Str::limit($c->webhook_url, 48) }}</td>
+                <td class="num"><a class="btn ghost sm" href="{{ route('admin.clients.edit', $c) }}">{{ __('Edit') }}</a></td>
             </tr>
         @empty
-            <tr><td colspan="7" class="empty">{{ __('No clients yet.') }}</td></tr>
+            <tr><td colspan="8" class="empty">{{ __('No clients yet.') }}</td></tr>
         @endforelse
         </tbody>
     </table>

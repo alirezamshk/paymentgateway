@@ -51,6 +51,24 @@ class AdminPanelTest extends TestCase
         $this->assertDatabaseHas('audit_logs', ['action' => 'client.created', 'actor_id' => $admin->id]);
     }
 
+    public function test_admin_edits_client_from_list(): void
+    {
+        $admin = $this->admin();
+        $client = $this->makeClient('panel-b')['client'];
+
+        $this->actingAs($admin)->get('/admin/clients')->assertOk()->assertSee("/admin/clients/{$client->public_id}/edit", false);
+        $this->actingAs($admin)->get("/admin/clients/{$client->public_id}/edit")->assertOk();
+        $this->actingAs($admin)->put("/admin/clients/{$client->public_id}", [
+            'name' => 'Panel B Renamed', 'slug' => 'panel-b',
+            'webhook_url' => 'https://new.example.com/hook', 'return_url' => 'https://new.example.com/return',
+        ])->assertRedirect("/admin/clients/{$client->public_id}");
+
+        $client->refresh();
+        $this->assertSame('Panel B Renamed', $client->name);
+        $this->assertSame('https://new.example.com/hook', $client->webhook_url);
+        $this->assertDatabaseHas('audit_logs', ['action' => 'client.updated', 'actor_id' => $admin->id]);
+    }
+
     public function test_admin_merchant_crud_and_test(): void
     {
         $admin = $this->admin();
