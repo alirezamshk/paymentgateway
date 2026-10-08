@@ -8,9 +8,13 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Merchant extends Model
 {
+    /** Deleting a merchant with payment history archives it (see MerchantService::delete()). */
+    use SoftDeletes;
+
     protected $fillable = [
         'client_id', 'provider_id', 'name', 'merchant_identifier', 'terminal_identifier', 'username',
         'encrypted_password', 'encrypted_api_key', 'encrypted_config', 'status', 'is_default',

@@ -288,5 +288,13 @@
     "Share": "سهم",
     "Total": "جمع",
     "Breakdown by period": "ریز به تفکیک دوره",
-    "API docs": "مستندات API"
+    "API docs": "مستندات API",
+    "Delete merchant": "حذف مرچنت",
+    "I understand, delete :name": "متوجه هستم، «:name» حذف شود",
+    "A merchant without payments is deleted permanently. A merchant with payments is archived: it disappears from lists and the API, its credentials are erased and it can no longer be used, but its past payments keep showing it. Not possible while a payment is in progress, or for the default merchant while others exist.": "مرچنتی که پرداختی ندارد کامل حذف می‌شود. مرچنتی که پرداخت دارد بایگانی می‌شود: از فهرست‌ها و API حذف می‌شود، اطلاعات حساب درگاهش پاک می‌شود و دیگر قابل استفاده نیست، ولی پرداخت‌های قبلی‌اش با همان نام باقی می‌مانند. وقتی پرداختی در جریان است، یا برای مرچنت پیش‌فرض تا وقتی مرچنت دیگری هست، امکان حذف نیست.",
+    "Tick the confirmation box to delete this merchant.": "برای حذف، تیک تایید را بزنید.",
+    "Merchant deleted.": "مرچنت حذف شد.",
+    "Merchant archived: it is hidden and its credentials were removed; its past payments are kept.": "مرچنت بایگانی شد: دیگر نمایش داده نمی‌شود و اطلاعات حسابش پاک شد؛ پرداخت‌های قبلی‌اش باقی است.",
+    "This merchant has :count payment(s) in progress. Disable it and try again once they finish.": "این مرچنت :count پرداخت در جریان دارد. آن را غیرفعال کنید و بعد از تمام شدن این پرداخت‌ها دوباره تلاش کنید.",
+    "This is the default merchant. Make another merchant the default first.": "این مرچنت پیش‌فرض است. ابتدا مرچنت دیگری را پیش‌فرض کنید."
 }

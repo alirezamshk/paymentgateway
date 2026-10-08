@@ -60,7 +60,8 @@ class Payment extends Model
 
     public function merchant(): BelongsTo
     {
-        return $this->belongsTo(Merchant::class);
+        // Archived (soft-deleted) merchants stay visible on their payments.
+        return $this->belongsTo(Merchant::class)->withTrashed();
     }
 
     public function provider(): BelongsTo

@@ -44,4 +44,18 @@
     </div>
     <button class="btn" type="submit">@include('admin._icon', ['name' => 'check']) {{ __('Save') }}</button>
 </form>
+
+@if($merchant->exists)
+<div class="card" style="margin-top:20px;border-color:var(--danger)">
+    <div class="card-head"><h2 style="color:var(--danger)">{{ __('Delete merchant') }}</h2></div>
+    <div class="card-body">
+        <p class="muted small" style="margin-top:0">{{ __('A merchant without payments is deleted permanently. A merchant with payments is archived: it disappears from lists and the API, its credentials are erased and it can no longer be used, but its past payments keep showing it. Not possible while a payment is in progress, or for the default merchant while others exist.') }}</p>
+        <form method="POST" action="{{ route('admin.merchants.destroy', $merchant) }}">
+            @csrf @method('DELETE')
+            <label style="display:flex;gap:8px;align-items:center;margin-bottom:12px"><input type="checkbox" name="confirm" value="1" required> {{ __('I understand, delete :name', ['name' => $merchant->name]) }}</label>
+            <button class="btn danger" type="submit">{{ __('Delete merchant') }}</button>
+        </form>
+    </div>
+</div>
+@endif
 @endsection

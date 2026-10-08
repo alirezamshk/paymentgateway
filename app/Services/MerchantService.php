@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\PaymentStatus;
 use App\Enums\RecordStatus;
 use App\Exceptions\ApiException;
 use App\Gateways\Contracts\SupportsCredentialCheck;
@@ -10,7 +11,9 @@ use App\Gateways\GatewayManager;
 use App\Models\Client;
 use App\Models\GatewayProvider;
 use App\Models\Merchant;
+use App\Models\PaymentAttempt;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Merchant management. Always scoped to a Client; credentials are validated against
@@ -116,6 +119,50 @@ class MerchantService
         $merchant->update(['status' => $status]);
 
         $this->audit->log($actorType, $actorId, 'merchant.'.($status === RecordStatus::Active ? 'enabled' : 'disabled'), $merchant->client_id, 'merchant', $merchant->public_id);
+    }
+
+    /**
+     * Removes a merchant. Without payment history it is deleted outright; with history it is
+     * archived (soft-deleted, disabled, credentials wiped) so old payments keep their merchant.
+     * Refused while a payment on it is still open (its callback/verify needs the credentials)
+     * and for the default merchant while the client has others (pick a new default first).
+     *
+     * @return 'deleted'|'archived'
+     *
+     * @throws ValidationException
+     */
+    public function delete(Merchant $merchant, string $actorType, ?int $actorId): string
+    {
+        return DB::transaction(function () use ($merchant, $actorType, $actorId) {
+            $locked = Merchant::whereKey($merchant->id)->lockForUpdate()->firstOrFail();
+
+            $open = $locked->payments()
+                ->whereNotIn('status', array_map(fn (PaymentStatus $s) => $s->value, array_filter(PaymentStatus::cases(), fn ($s) => $s->isFinal())))
+                ->count();
+            if ($open > 0) {
+                throw ValidationException::withMessages(['merchant' => __('This merchant has :count payment(s) in progress. Disable it and try again once they finish.', ['count' => $open])]);
+            }
+
+            if ($locked->is_default && Merchant::where('client_id', $locked->client_id)->whereKeyNot($locked->id)->exists()) {
+                throw ValidationException::withMessages(['merchant' => __('This is the default merchant. Make another merchant the default first.')]);
+            }
+
+            $hasHistory = $locked->payments()->exists() || PaymentAttempt::where('merchant_id', $locked->id)->exists();
+
+            if (! $hasHistory) {
+                $locked->forceDelete();
+                $outcome = 'deleted';
+            } else {
+                $this->fillCredentials($locked, [], replace: true);
+                $locked->forceFill(['status' => RecordStatus::Disabled, 'is_default' => false])->save();
+                $locked->delete();
+                $outcome = 'archived';
+            }
+
+            $this->audit->log($actorType, $actorId, 'merchant.'.$outcome, $locked->client_id, 'merchant', $locked->public_id, ['provider' => $locked->provider?->code]);
+
+            return $outcome;
+        });
     }
 
     public function testCredentials(Merchant $merchant, string $actorType, ?int $actorId): GatewayCheckResult
