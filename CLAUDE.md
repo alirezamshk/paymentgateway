@@ -57,6 +57,6 @@ in `<span class="ltr">` for RTL.
 ## Open follow-ups
 * v2moon uses client `cli_01m4d25bsahcpjrj3te9714rds` (formerly "test-site") with one active key and
   the merchant list from `GET /api/v1/merchants`; it should also send `customer` / `metadata`.
-* The `ZarinPal Sandbox` merchant on that client must stay disabled (sandbox marks payments paid).
+  Its `ZarinPal Sandbox` merchant was archived; active gateways are Sepehr and Sepordeh (2026-10).
 * Disable the test client and remove `tk-test.php` / legacy `sepehr2` files on the main site.
 * Live-test AsanPardakht with a small amount before enabling it.
