@@ -65,6 +65,17 @@ class MerchantController extends Controller
         return redirect()->route('admin.clients.show', $merchant->client)->with('status', __('Merchant updated.'));
     }
 
+    public function destroy(Request $request, Merchant $merchant): RedirectResponse
+    {
+        $request->validate(['confirm' => ['accepted']], ['confirm.accepted' => __('Tick the confirmation box to delete this merchant.')]);
+
+        $outcome = $this->merchants->delete($merchant, 'admin', $request->user()->id);
+
+        return redirect()->route('admin.clients.show', $merchant->client)->with('status', $outcome === 'deleted'
+            ? __('Merchant deleted.')
+            : __('Merchant archived: it is hidden and its credentials were removed; its past payments are kept.'));
+    }
+
     public function toggle(Request $request, Merchant $merchant): RedirectResponse
     {
         $this->merchants->setStatus($merchant, $merchant->isActive() ? RecordStatus::Disabled : RecordStatus::Active, 'admin', $request->user()->id);

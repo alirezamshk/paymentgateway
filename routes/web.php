@@ -55,6 +55,7 @@ Route::prefix('admin')->name('admin.')->middleware(SetAdminLocale::class)->group
         Route::put('merchants/{merchant}', [Admin\MerchantController::class, 'update'])->name('merchants.update');
         Route::post('merchants/{merchant}/toggle', [Admin\MerchantController::class, 'toggle'])->name('merchants.toggle');
         Route::post('merchants/{merchant}/default', [Admin\MerchantController::class, 'makeDefault'])->name('merchants.default');
+        Route::delete('merchants/{merchant}', [Admin\MerchantController::class, 'destroy'])->name('merchants.destroy');
         Route::post('merchants/{merchant}/test', [Admin\MerchantController::class, 'test'])->name('merchants.test');
 
         Route::get('payments', [Admin\PaymentController::class, 'index'])->name('payments.index');

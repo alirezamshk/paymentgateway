@@ -117,6 +117,14 @@ This is why the default TTL (60 min) is well above typical PSP session lifetimes
 * Eloquent and the query builder are used throughout (parameterized SQL), with strict
   validation on every input.
 
+## Removing a merchant
+
+`payments` and `payment_attempts` keep a restricting foreign key to their merchant, so history is
+never lost. `MerchantService::delete()` hard-deletes a merchant without payments and otherwise
+archives it (soft delete, disabled, credentials wiped); `Payment::merchant()` loads archived
+merchants too. Deletion is refused while a payment on the merchant is not final (its callback and
+verify still need the credentials) and for the default merchant while the client has others.
+
 ## Settlement
 
 For clients whose payments land in Tech-Kala's own account, an append-only ledger
