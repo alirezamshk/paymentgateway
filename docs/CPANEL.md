@@ -58,7 +58,7 @@ session.
 
 ```bash
 cd ~
-git clone -b claude/cool-mccarthy-ojh4ad https://github.com/alirezamshk/paymentgateway.git
+git clone -b main https://github.com/alirezamshk/paymentgateway.git
 cd paymentgateway
 ```
 

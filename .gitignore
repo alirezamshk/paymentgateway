@@ -21,3 +21,6 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+
+# PHP error log written by cPanel/PHP-FPM
+error_log
