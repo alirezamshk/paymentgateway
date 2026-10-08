@@ -47,6 +47,7 @@ PHP 8.2+ · Laravel 11 · MySQL/MariaDB · Redis (cache, nonces, queue) · PHPUn
 | [docs/PROVIDERS.md](docs/PROVIDERS.md) | Per-PSP notes: credentials, endpoints, requirements (IP registration, Referer), verified status |
 | [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | Errors met during installation and operation, with causes and fixes |
 | [docs/CLIENT_AGENT_BRIEF.md](docs/CLIENT_AGENT_BRIEF.md) | Self-contained task brief for the developer/coding agent integrating a client website (contract, security rules, test vectors, acceptance criteria) |
+| [docs/BILLING_PANEL_BRIEF.md](docs/BILLING_PANEL_BRIEF.md) | Same, for a billing panel that creates invoices and sends them for payment (invoice mapping, retries, settings screen) |
 | [docs/fa/README.md](docs/fa/README.md) | راهنمای فارسی: نصب، کار با پنل، اتصال سایت‌ها، خطاهای رایج |
 | [scripts/test-client.php](scripts/test-client.php) | Dependency-free client for smoke-testing a deployment (create / status / verify / cancel) |
 
