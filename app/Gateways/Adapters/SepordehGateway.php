@@ -17,13 +17,16 @@ use App\Support\SensitiveData;
  *   add:    POST {base}/merchant/invoices/add     {merchant, amount, callback, orderId, description}
  *           -> {status: 200, information: {invoice_id}}
  *   pay:    GET  {base}/merchant/invoices/pay/id:{invoice_id}
+ *           or  {base}/merchant/invoices/pay/automatic:true/id:{invoice_id} ("direct" mode)
  *   return: GET  callback?authority={invoice_id}
  *   verify: POST {base}/merchant/invoices/verify  {merchant, authority} -> {status: 200, information: {...}}
  *
  * Credentials: merchant_identifier = Sepordeh merchant key.
  * Provider config: base_url, amount_currency ("IRT" by default - Sepordeh amounts are in Tomans;
- * IRR payments are converted exactly or rejected). Confirm these against Sepordeh's current
- * documentation and sandbox before production use.
+ * IRR payments are converted exactly or rejected), direct (true = skip Sepordeh's own page and
+ * go straight to the bank). Response keys are read case-insensitively.
+ * Cross-checked against the shetabit/multipay Sepordeh driver; confirm with a real payment
+ * before production use.
  */
 class SepordehGateway extends AbstractGateway
 {
@@ -48,12 +51,14 @@ class SepordehGateway extends AbstractGateway
         ];
 
         $response = $this->send(fn ($http) => $http->asForm()->post($this->baseUrl().'/merchant/invoices/add', $request));
-        $body = $this->json($response);
+        $body = $this->normalize($this->json($response));
         $invoiceId = data_get($body, 'information.invoice_id');
 
         if ((int) ($body['status'] ?? 0) === 200 && ! empty($invoiceId)) {
+            $payPath = $this->setting('direct', false) ? '/merchant/invoices/pay/automatic:true/id:' : '/merchant/invoices/pay/id:';
+
             return GatewayCreateResult::success(
-                new RedirectInstruction($this->baseUrl().'/merchant/invoices/pay/id:'.rawurlencode((string) $invoiceId)),
+                new RedirectInstruction($this->baseUrl().$payPath.rawurlencode((string) $invoiceId)),
                 authority: (string) $invoiceId,
                 token: null,
                 request: $request,
@@ -84,7 +89,7 @@ class SepordehGateway extends AbstractGateway
         ];
 
         $response = $this->send(fn ($http) => $http->asForm()->post($this->baseUrl().'/merchant/invoices/verify', $request));
-        $body = $this->json($response);
+        $body = $this->normalize($this->json($response));
         $raw = ['request' => $request, 'response' => $body];
         $info = is_array($body['information'] ?? null) ? $body['information'] : [];
 
@@ -102,6 +107,18 @@ class SepordehGateway extends AbstractGateway
             cardMask: SensitiveData::maskPan($info['card'] ?? null),
             raw: $raw,
         );
+    }
+
+    /** Lower-case all keys (Sepordeh responses are not consistently cased). */
+    private function normalize(array $data): array
+    {
+        $out = [];
+
+        foreach ($data as $key => $value) {
+            $out[is_string($key) ? strtolower($key) : $key] = is_array($value) ? $this->normalize($value) : $value;
+        }
+
+        return $out;
     }
 
     private function pspCurrency(): Currency
