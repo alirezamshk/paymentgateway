@@ -346,6 +346,9 @@ php artisan config:cache && php artisan route:cache && php artisan view:cache
 php artisan queue:restart
 ```
 
+After the release that introduced settlement, run once: `php artisan settlement:backfill`
+(credits payments that were paid before the settlement ledger existed).
+
 ## Notes
 
 * Sub-directory installs: client sites must sign the **full** request path, including the

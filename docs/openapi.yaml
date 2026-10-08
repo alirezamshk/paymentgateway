@@ -422,6 +422,13 @@ components:
         new_attempt:
           type: boolean
           description: Start a new PSP attempt for an existing failed payment with the same order_id.
+        customer:
+          type: [object, 'null']
+          description: Optional payer details. Stored for search in Tech-Kala's admin panel (mobile, card, username).
+          properties:
+            mobile: { type: [string, 'null'], description: 'Iranian mobile, normalized to 09xxxxxxxxx (+98/0098/Persian digits accepted)', example: '09121234567' }
+            username: { type: [string, 'null'], maxLength: 100, example: ali_m }
+            name: { type: [string, 'null'], maxLength: 150 }
     Payment:
       type: object
       properties:
@@ -430,6 +437,12 @@ components:
         amount: { type: integer }
         currency: { $ref: '#/components/schemas/Currency' }
         description: { type: [string, 'null'] }
+        customer:
+          type: [object, 'null']
+          properties:
+            mobile: { type: [string, 'null'] }
+            username: { type: [string, 'null'] }
+            name: { type: [string, 'null'] }
         status: { $ref: '#/components/schemas/PaymentStatus' }
         payment_url:
           type: [string, 'null']

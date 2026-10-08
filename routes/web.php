@@ -19,6 +19,12 @@ if (config('gateways.sandbox_enabled') && ! app()->isProduction()) {
 
 Route::prefix('admin')->name('admin.')->middleware(SetAdminLocale::class)->group(function () {
     Route::get('login', [Admin\AuthController::class, 'showLogin'])->name('login');
+    Route::post('locale/{locale}', function (string $locale) {
+        abort_unless(in_array($locale, SetAdminLocale::SUPPORTED, true), 404);
+        session(['admin_locale' => $locale]);
+
+        return back();
+    })->name('locale');
     Route::post('login', [Admin\AuthController::class, 'login'])->middleware('throttle:admin-login');
     Route::post('logout', [Admin\AuthController::class, 'logout'])->name('logout');
 
@@ -57,6 +63,12 @@ Route::prefix('admin')->name('admin.')->middleware(SetAdminLocale::class)->group
         Route::get('providers/{provider}/edit', [Admin\ProviderController::class, 'edit'])->name('providers.edit');
         Route::put('providers/{provider}', [Admin\ProviderController::class, 'update'])->name('providers.update');
         Route::post('providers/{provider}/toggle', [Admin\ProviderController::class, 'toggle'])->name('providers.toggle');
+
+        Route::get('settlements', [Admin\SettlementController::class, 'index'])->name('settlements.index');
+        Route::get('settlements/{client}', [Admin\SettlementController::class, 'show'])->name('settlements.show');
+        Route::get('settlements/{client}/export', [Admin\SettlementController::class, 'export'])->name('settlements.export');
+        Route::post('settlements/{client}/payouts', [Admin\SettlementController::class, 'storePayout'])->name('settlements.payouts.store');
+        Route::post('settlements/{client}/adjustments', [Admin\SettlementController::class, 'storeAdjustment'])->name('settlements.adjustments.store');
 
         Route::get('audit-logs', [Admin\AuditLogController::class, 'index'])->name('audit-logs.index');
     });

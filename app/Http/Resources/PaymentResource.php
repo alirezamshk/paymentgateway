@@ -19,6 +19,11 @@ class PaymentResource extends JsonResource
             'amount' => $this->amount,
             'currency' => $this->currency->value,
             'description' => $this->description,
+            'customer' => $this->customer_mobile || $this->customer_username || $this->customer_name ? [
+                'mobile' => $this->customer_mobile,
+                'username' => $this->customer_username,
+                'name' => $this->customer_name,
+            ] : null,
             'status' => $this->status->value,
             'payment_url' => $this->status->isPayable() ? $this->payment_url : null,
             'merchant_id' => $this->merchant?->public_id,

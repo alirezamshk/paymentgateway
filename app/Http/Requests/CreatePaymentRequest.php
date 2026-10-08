@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Enums\Currency;
+use App\Support\Mobile;
 use Closure;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -37,6 +38,13 @@ class CreatePaymentRequest extends FormRequest
                 fn (string $attr, mixed $value, Closure $fail) => strlen((string) json_encode($value)) > 4096 ? $fail('metadata must be at most 4KB.') : null,
             ],
             'new_attempt' => ['sometimes', 'boolean'],
+            // Optional payer details, used for search in the admin panel.
+            'customer' => ['nullable', 'array'],
+            'customer.mobile' => ['nullable', 'string', 'max:20',
+                fn (string $attr, mixed $value, Closure $fail) => $value !== null && Mobile::normalize((string) $value) === null ? $fail('customer.mobile must be an Iranian mobile number (09xxxxxxxxx).') : null,
+            ],
+            'customer.username' => ['nullable', 'string', 'max:100'],
+            'customer.name' => ['nullable', 'string', 'max:150'],
         ];
     }
 

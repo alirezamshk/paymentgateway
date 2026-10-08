@@ -36,6 +36,9 @@ path. Use the base URL you were given exactly.
 
 Customers must turn off VPNs before paying: Shaparak payment pages reject foreign IPs.
 
+Optionally send the payer as `"customer": {"mobile": "0912...", "username": "...", "name": "..."}`:
+Tech-Kala's support can then find the payment by mobile number or username.
+
 A dependency-free reference client you can run from the command line is in
 [`scripts/test-client.php`](../scripts/test-client.php).
 

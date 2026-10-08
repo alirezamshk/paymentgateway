@@ -9,7 +9,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Client extends Model
 {
-    protected $fillable = ['name', 'slug', 'status', 'webhook_url', 'webhook_secret', 'return_url'];
+    protected $fillable = [
+        'name', 'slug', 'status', 'webhook_url', 'webhook_secret', 'return_url',
+        'commission_bps', 'commission_fixed_irr', 'settlement_delay_hours', 'iban', 'account_holder',
+    ];
 
     protected $hidden = ['id', 'webhook_secret'];
 
@@ -25,6 +28,9 @@ class Client extends Model
         return [
             'status' => RecordStatus::class,
             'webhook_secret' => 'encrypted',
+            'commission_bps' => 'integer',
+            'commission_fixed_irr' => 'integer',
+            'settlement_delay_hours' => 'integer',
         ];
     }
 
@@ -41,6 +47,16 @@ class Client extends Model
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
+    }
+
+    public function ledgerEntries(): HasMany
+    {
+        return $this->hasMany(LedgerEntry::class);
+    }
+
+    public function payouts(): HasMany
+    {
+        return $this->hasMany(Payout::class);
     }
 
     public function webhookDeliveries(): HasMany
