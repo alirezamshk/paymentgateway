@@ -26,6 +26,9 @@ return [
     // Admin panel language: fa (Persian, RTL) or en. The API always answers in English.
     'admin_locale' => env('ADMIN_LOCALE', 'fa'),
 
+    // Developer documentation at /docs. false = visible to logged-in admins only.
+    'public_docs' => (bool) env('PAYMENTS_PUBLIC_DOCS', true),
+
     'default_currency' => env('PAYMENTS_DEFAULT_CURRENCY', 'IRR'),
 
     // Unpaid payments (created/pending/redirected) expire after this many minutes.

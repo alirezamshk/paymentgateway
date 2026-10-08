@@ -32,6 +32,7 @@ Every feature ships with tests in `tests/Feature` (gateways use `Http::fake`).
 | Settlement ledger | `app/Settlement/LedgerService.php`, `Admin/SettlementController` |
 | Sales report + chart | `app/Reports/SalesReport.php`, `app/Reports/StackedColumnChart.php`, `Admin/ReportController` |
 | Admin UI (fa/en) | `resources/views/admin/*`, `lang/fa.json`, `app/Http/Middleware/SetAdminLocale.php`, `app/Support/Display.php` (Jalali, Tehran time) |
+| Developer docs page (`/docs`, public unless `PAYMENTS_PUBLIC_DOCS=false`) | `app/Http/Controllers/Web/DocsController.php`, `resources/views/docs/index.blade.php` — keep in sync with `docs/openapi.yaml` |
 | Customer pay page | `app/Http/Controllers/Web/PaymentPageController.php` (auto-redirect, `Referrer-Policy: origin` for Sepehr) |
 
 Admin UI conventions: every new string goes in `lang/fa.json` (English is the key); the admin CSP
