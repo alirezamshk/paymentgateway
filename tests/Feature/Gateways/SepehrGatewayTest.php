@@ -34,8 +34,15 @@ class SepehrGatewayTest extends GatewayTestCase
 
         $payment = $this->createPayment();
         $redirect = $payment->latestAttempt->redirect_payload;
-        $this->assertSame('POST', $redirect['method']);
-        $this->assertSame(['token' => 'tok-123', 'terminalID' => '98765432'], $redirect['fields']);
+        $this->assertSame('GET', $redirect['method']);
+        $this->assertSame('https://sepehr.shaparak.ir/Payment/Pay', $redirect['url']);
+        $this->assertSame(['token' => 'tok-123', 'terminalid' => '98765432'], $redirect['fields']);
+
+        // The payment page forwards token + terminalid to Sepehr.
+        $this->get("/pay/{$payment->public_id}")
+            ->assertSee('action="https://sepehr.shaparak.ir/Payment/Pay"', false)
+            ->assertSee('name="token" value="tok-123"', false)
+            ->assertSee('name="terminalid" value="98765432"', false);
         Http::assertSent(fn (Request $r) => str_ends_with($r->url(), 'GetToken') && $r->isForm()
             && $r['Amount'] == 500000 && $r['TerminalID'] === '98765432' && $r['InvoiceID'] === (string) $payment->latestAttempt->psp_invoice_id);
 

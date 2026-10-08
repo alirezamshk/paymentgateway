@@ -16,15 +16,15 @@ use App\Support\SensitiveData;
  *
  *   token:  POST {api}/V1/PeymentApi/GetToken  (form) Amount, callbackURL, InvoiceID, TerminalID, Payload
  *           -> {Status: 0, Accesstoken}
- *   pay:    POST {pay_url}  fields token, terminalID
+ *   pay:    GET  {pay_url} (default https://sepehr.shaparak.ir/Payment/Pay) with token, terminalid
  *   return: POST callback with respcode, respmsg, amount, invoiceid, terminalid, tracenumber, rrn,
  *           digitalreceipt, cardnumber (masked), ...  respcode 0 = customer completed payment.
  *   verify: POST {api}/V1/PeymentApi/Advice  (form) digitalreceipt, Tid
  *           -> {Status: "Ok"|"Duplicate"|"NOk", ReturnId}; ReturnId must equal the paid amount.
  *
  * Amounts are in Rials. Credentials: terminal_identifier = terminal id.
- * The server IP must be registered with Sepehr and outbound port 8081 must be open
- * (error -2 otherwise). Provider config overrides: api_url, pay_url.
+ * The server IP must be registered with Sepehr (error -2 otherwise).
+ * Provider config overrides: api_url (base of /V1/PeymentApi/...), pay_url, pay_method (GET|POST).
  * Cross-checked against the shetabit/multipay Sepehr driver; confirm with a real payment
  * before production use.
  */
@@ -74,7 +74,7 @@ class SepehrGateway extends AbstractGateway
 
         if ($response->successful() && $status === '0' && $token !== '') {
             return GatewayCreateResult::success(
-                new RedirectInstruction($this->payUrl(), 'POST', ['token' => $token, 'terminalID' => $terminalId]),
+                new RedirectInstruction($this->payUrl(), $this->payMethod(), ['token' => $token, 'terminalid' => $terminalId]),
                 authority: null,
                 token: $token,
                 request: $request,
@@ -162,6 +162,11 @@ class SepehrGateway extends AbstractGateway
 
     private function payUrl(): string
     {
-        return (string) $this->setting('pay_url', 'https://sepehr.shaparak.ir:8080/Pay');
+        return (string) $this->setting('pay_url', 'https://sepehr.shaparak.ir/Payment/Pay');
+    }
+
+    private function payMethod(): string
+    {
+        return strtoupper((string) $this->setting('pay_method', 'GET')) === 'POST' ? 'POST' : 'GET';
     }
 }

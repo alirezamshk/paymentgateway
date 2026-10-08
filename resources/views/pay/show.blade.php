@@ -20,11 +20,10 @@
 
     @if($redirect)
         <form id="psp-form" method="{{ strtoupper($redirect->method) === 'POST' ? 'POST' : 'GET' }}" action="{{ $redirect->url }}">
-            @if(strtoupper($redirect->method) === 'POST')
-                @foreach($redirect->fields as $name => $value)
-                    <input type="hidden" name="{{ $name }}" value="{{ $value }}">
-                @endforeach
-            @endif
+            {{-- Fields are sent as form data (POST) or as the query string (GET). --}}
+            @foreach($redirect->fields as $name => $value)
+                <input type="hidden" name="{{ $name }}" value="{{ $value }}">
+            @endforeach
             <button class="btn" type="submit">ادامه و انتقال به درگاه بانک</button>
         </form>
         <p class="muted">در حال انتقال به درگاه پرداخت...</p>
