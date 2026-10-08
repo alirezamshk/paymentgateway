@@ -98,8 +98,11 @@ HTTP responses).
 | Sepordeh | `SepordehGateway` | not required | yes (faked HTTP) | **no** |
 | Sandbox (internal) | `SandboxGateway` | - | yes (end-to-end) | n/a |
 
-> **Sepehr** has completed a real production payment end to end (token → bank page → callback →
-> Advice → paid) on `tech-kala.com`. Sepehr requires the server IP to be registered and the payment page
+> **Sepehr** has completed real production payments end to end (token → bank page → callback →
+> Advice → paid) on `tech-kala.com`, including a full client round trip from an external billing
+> panel (create → payment page → bank → verify → signed `payment.succeeded` webhook delivered →
+> invoice marked paid) on 2026-10-08. A customer cancellation at the bank was handled as `failed`
+> with a `payment.failed` webhook. Sepehr requires the server IP to be registered and the payment page
 > to send the registered domain as Referer (handled: the payment page uses `Referrer-Policy: origin`).
 >
 > **The other PSP integrations are not production-ready yet.** Each adapter follows the PSP's
