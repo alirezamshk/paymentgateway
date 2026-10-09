@@ -41,7 +41,12 @@ abstract class AbstractGateway implements GatewayInterface
         }
 
         if ($response->serverError()) {
-            throw new GatewayException("{$this->code()}: PSP returned HTTP {$response->status()}", (string) $response->status());
+            // Keep the start of the body: some PSPs (e.g. Asan Pardakht) report business errors as 5xx.
+            throw new GatewayException(
+                "{$this->code()}: PSP returned HTTP {$response->status()}",
+                (string) $response->status(),
+                response: ['status' => $response->status(), 'body' => mb_substr($response->body(), 0, 500)],
+            );
         }
 
         return $response;

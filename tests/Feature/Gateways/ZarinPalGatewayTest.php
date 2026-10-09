@@ -67,7 +67,7 @@ class ZarinPalGatewayTest extends GatewayTestCase
         Http::fake([
             'sandbox.zarinpal.com/*' => Http::sequence()
                 ->push(['data' => [], 'errors' => ['code' => -9, 'message' => 'Validation error']], 422)
-                ->push('', 502),
+                ->push('upstream says no', 502),
             '*.example.com/*' => Http::response('', 200),
         ]);
 
@@ -78,6 +78,8 @@ class ZarinPalGatewayTest extends GatewayTestCase
         $second = $this->createPayment();
         $this->assertStatus($second, PaymentStatus::Failed);
         $this->assertSame('GATEWAY_UNAVAILABLE', $second->latestAttempt->error_code);
+        // The PSP's answer is kept for diagnosis.
+        $this->assertSame(['status' => 502, 'body' => 'upstream says no'], $second->latestAttempt->response_payload);
     }
 
     public function test_mismatched_authority_is_not_verified(): void

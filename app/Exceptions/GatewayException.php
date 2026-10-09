@@ -11,7 +11,10 @@ use RuntimeException;
  */
 class GatewayException extends RuntimeException
 {
-    public function __construct(string $message, public readonly ?string $pspCode = null, ?\Throwable $previous = null)
+    /**
+     * @param  array<string, mixed>  $response  What the PSP answered, if anything (stored masked, for diagnosis).
+     */
+    public function __construct(string $message, public readonly ?string $pspCode = null, ?\Throwable $previous = null, public readonly array $response = [])
     {
         parent::__construct($message, 0, $previous);
     }
