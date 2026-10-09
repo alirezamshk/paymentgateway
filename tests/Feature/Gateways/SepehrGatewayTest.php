@@ -123,4 +123,60 @@ class SepehrGatewayTest extends GatewayTestCase
         $this->assertSame('SEPEHR_-2', $payment->latestAttempt->error_code);
         $this->assertStringContainsString('port 8081', $payment->latestAttempt->error_message);
     }
+
+    public function test_receipt_of_one_payment_cannot_pay_another(): void
+    {
+        Http::fake([
+            'sepehr.shaparak.ir/Rest/V1/PeymentApi/GetToken' => Http::response(['Status' => 0, 'Accesstoken' => 'tok-123']),
+            // Sepehr answers Duplicate (with the original amount) for an already advised receipt.
+            'sepehr.shaparak.ir/Rest/V1/PeymentApi/Advice' => Http::sequence()
+                ->push(['Status' => 'Ok', 'ReturnId' => '500000'])
+                ->whenEmpty(Http::response(['Status' => 'Duplicate', 'ReturnId' => '500000'])),
+            '*.example.com/*' => Http::response('', 200),
+        ]);
+
+        $a = $this->createPayment();
+        $this->post("/api/v1/gateways/sepehr/callback/{$a->public_id}", $this->callbackData($a));
+        $this->assertSame(null, $a->latestAttempt->fresh()->error_code);
+        $this->assertStatus($a, PaymentStatus::Paid);
+
+        // Same receipt replayed onto another payment of the same amount.
+        $b = $this->createPayment();
+        $this->post("/api/v1/gateways/sepehr/callback/{$b->public_id}", $this->callbackData($b));
+        $this->assertStatus($b, PaymentStatus::Failed);
+        $this->assertSame('RECEIPT_REUSED', $b->latestAttempt->fresh()->error_code);
+    }
+
+    public function test_duplicate_is_only_accepted_on_a_retry_of_the_same_attempt(): void
+    {
+        Http::fake([
+            'sepehr.shaparak.ir/Rest/V1/PeymentApi/GetToken' => Http::response(['Status' => 0, 'Accesstoken' => 'tok-123']),
+            'sepehr.shaparak.ir/Rest/V1/PeymentApi/Advice' => Http::sequence()
+                ->push('', 503)                                            // timeout-like failure after Sepehr processed it
+                ->push(['Status' => 'Duplicate', 'ReturnId' => '500000']), // our retry
+            '*.example.com/*' => Http::response('', 200),
+        ]);
+
+        $payment = $this->createPayment();
+        $this->post("/api/v1/gateways/sepehr/callback/{$payment->public_id}", $this->callbackData($payment));
+        $this->assertStatus($payment, PaymentStatus::CallbackReceived);
+
+        $this->artisan('payments:reconcile')->assertSuccessful();
+        $this->assertStatus($payment, PaymentStatus::Paid);
+    }
+
+    public function test_receipt_advised_elsewhere_is_rejected(): void
+    {
+        // E.g. the receipt was already confirmed by another system sharing the terminal.
+        Http::fake([
+            'sepehr.shaparak.ir/Rest/V1/PeymentApi/GetToken' => Http::response(['Status' => 0, 'Accesstoken' => 'tok-123']),
+            'sepehr.shaparak.ir/Rest/V1/PeymentApi/Advice' => Http::response(['Status' => 'Duplicate', 'ReturnId' => '500000']),
+            '*.example.com/*' => Http::response('', 200),
+        ]);
+
+        $payment = $this->createPayment();
+        $this->post("/api/v1/gateways/sepehr/callback/{$payment->public_id}", $this->callbackData($payment, ['digitalreceipt' => 'DR-FOREIGN']));
+        $this->assertStatus($payment, PaymentStatus::Failed);
+        $this->assertSame('RECEIPT_REUSED', $payment->latestAttempt->fresh()->error_code);
+    }
 }

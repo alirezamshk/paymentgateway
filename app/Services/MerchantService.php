@@ -69,6 +69,13 @@ class MerchantService
     {
         return DB::transaction(function () use ($merchant, $data, $actorType, $actorId) {
             $replace = false;
+            $changesCredentials = array_filter($data['credentials'] ?? [], fn ($v) => $v !== null && $v !== '') !== []
+                || (isset($data['provider']) && $data['provider'] !== $merchant->provider->code);
+
+            // Open payments are verified with the merchant's current credentials.
+            if ($changesCredentials && ($open = $this->openPayments($merchant)) > 0) {
+                throw new ApiException('MERCHANT_HAS_OPEN_PAYMENTS', __('This merchant has :count payment(s) in progress. Disable it and try again once they finish.', ['count' => $open]), 409);
+            }
 
             if (isset($data['provider']) && $data['provider'] !== $merchant->provider->code) {
                 $merchant->provider()->associate($this->provider($data['provider']));
@@ -136,9 +143,7 @@ class MerchantService
         return DB::transaction(function () use ($merchant, $actorType, $actorId) {
             $locked = Merchant::whereKey($merchant->id)->lockForUpdate()->firstOrFail();
 
-            $open = $locked->payments()
-                ->whereNotIn('status', array_map(fn (PaymentStatus $s) => $s->value, array_filter(PaymentStatus::cases(), fn ($s) => $s->isFinal())))
-                ->count();
+            $open = $this->openPayments($locked);
             if ($open > 0) {
                 throw ValidationException::withMessages(['merchant' => __('This merchant has :count payment(s) in progress. Disable it and try again once they finish.', ['count' => $open])]);
             }
@@ -163,6 +168,13 @@ class MerchantService
 
             return $outcome;
         });
+    }
+
+    private function openPayments(Merchant $merchant): int
+    {
+        $final = array_map(fn (PaymentStatus $s) => $s->value, array_filter(PaymentStatus::cases(), fn ($s) => $s->isFinal()));
+
+        return $merchant->payments()->whereNotIn('status', $final)->count();
     }
 
     public function testCredentials(Merchant $merchant, string $actorType, ?int $actorId): GatewayCheckResult

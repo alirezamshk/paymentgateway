@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Gateways\GatewayManager;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
@@ -18,6 +19,11 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        $proxies = trim((string) config('payments.trusted_proxies'));
+        if ($proxies !== '') {
+            TrustProxies::at($proxies === '*' ? '*' : array_values(array_filter(array_map('trim', explode(',', $proxies)))));
+        }
+
         if ($this->app->isProduction()) {
             URL::forceScheme('https');
         }

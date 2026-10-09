@@ -7,6 +7,13 @@ use Tests\TestCase;
 
 class TenantIsolationTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+        // Client-side merchant management is opt-in (operator-managed by default).
+        config(['payments.client_merchant_write' => true]);
+    }
+
     public function test_client_cannot_access_another_clients_payment(): void
     {
         Http::fake(['*' => Http::response('', 200)]);

@@ -13,8 +13,11 @@ final class SensitiveData
         'merchantid', 'merchant', 'merchantconfigurationid', 'terminalid', 'tid', 'usr', 'username',
         'authorization', 'xsignature', 'signature', 'cvv', 'cvv2', 'pin', 'pin2', 'expiry', 'expdate',
         'encryptedpassword', 'encryptedapikey', 'encryptedconfig', 'encryptedsecret', 'accesstoken',
-        'privatekey', 'key',
+        'privatekey', 'key', 'apitoken', 'refreshtoken', 'xapikey', 'cookie', 'setcookie', 'hmac', 'iban',
     ];
+
+    /** Any key containing one of these is redacted too (e.g. merchant_password, sepehr_api_secret). */
+    private const REDACT_FRAGMENTS = ['secret', 'password', 'passwd', 'apikey', 'privatekey'];
 
     /** Keys whose values are card numbers and must be masked. */
     private const CARD_KEYS = ['cardnumber', 'pan', 'cardpan', 'card', 'maskedpan', 'cardno'];
@@ -30,7 +33,7 @@ final class SensitiveData
         foreach ($data as $key => $value) {
             $normalized = is_string($key) ? strtolower(str_replace(['_', '-'], '', $key)) : null;
 
-            if ($normalized !== null && in_array($normalized, self::REDACT_KEYS, true)) {
+            if ($normalized !== null && (in_array($normalized, self::REDACT_KEYS, true) || self::containsFragment($normalized))) {
                 $out[$key] = $value === null || $value === '' ? $value : '[REDACTED]';
             } elseif ($normalized !== null && in_array($normalized, self::CARD_KEYS, true) && is_scalar($value)) {
                 $out[$key] = self::maskPan((string) $value);
@@ -91,5 +94,16 @@ final class SensitiveData
         }
 
         return $sum % 10 === 0;
+    }
+
+    private static function containsFragment(string $normalizedKey): bool
+    {
+        foreach (self::REDACT_FRAGMENTS as $fragment) {
+            if (str_contains($normalizedKey, $fragment)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

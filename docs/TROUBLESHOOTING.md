@@ -15,7 +15,7 @@ error carries a `request_id`; search for it in `storage/logs/` and in the admin 
 | AutoSSL: *does not resolve to any IP addresses* | DNS is hosted elsewhere (e.g. Cloudflare), cPanel's zone is not authoritative | Add the `A` record at the DNS provider, or use the sub-directory layout |
 | `/payment/...` shows WordPress 404 / PHP 7 errors | Folder has no own `.htaccess` / handler | Create `public_html/payment/.htaccess` with `AddHandler application/x-httpd-ea-php83` and the rewrite rules |
 | Admin login loops back to the login page | Secure cookie over HTTP, or wrong `SESSION_PATH` | Use HTTPS; `SESSION_PATH` must match the folder (`/payment`) or `/` for a subdomain |
-| `HTTPS_REQUIRED` on every API call | Behind a proxy/CDN, HTTPS not detected | `TRUSTED_PROXIES=*` (or the proxy IPs), then `php artisan config:cache` |
+| `HTTPS_REQUIRED` on every API call | Behind a proxy/CDN, HTTPS not detected | `TRUSTED_PROXIES=<the proxy/CDN IP ranges>` (see CPANEL.md; avoid `*`), then `php artisan config:cache` |
 | Config change has no effect | Config is cached | `php artisan config:cache` after every `.env` change |
 | `grep: /var/log/cron: Permission denied` | Only root can read it | Run that check as root |
 

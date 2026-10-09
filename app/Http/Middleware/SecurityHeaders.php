@@ -27,11 +27,13 @@ class SecurityHeaders
         }
 
         if ($request->isSecure()) {
-            $headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+            // No includeSubDomains: in a sub-folder install this header would bind every subdomain.
+            $headers->set('Strict-Transport-Security', 'max-age=31536000');
         }
 
-        if ($request->is('api/*')) {
-            $headers->set('Cache-Control', 'no-store');
+        // API responses, and admin pages (which show secrets once), are never cached.
+        if ($request->is('api/*') || $request->is('admin', 'admin/*')) {
+            $headers->set('Cache-Control', 'no-store, private');
         }
 
         return $response;

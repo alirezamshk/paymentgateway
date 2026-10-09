@@ -32,6 +32,7 @@ class MerchantController extends Controller
 
     public function store(MerchantRequest $request): JsonResponse
     {
+        $this->assertWritable();
         $client = $this->client($request);
         $merchant = $this->merchants->create($client, $request->validated(), 'client', $client->id);
 
@@ -40,10 +41,18 @@ class MerchantController extends Controller
 
     public function update(MerchantRequest $request, string $merchantId): MerchantResource
     {
+        $this->assertWritable();
         $client = $this->client($request);
         $merchant = $this->merchants->update($this->find($request, $merchantId), $request->validated(), 'client', $client->id);
 
         return new MerchantResource($merchant->load('provider'));
+    }
+
+    private function assertWritable(): void
+    {
+        if (! config('payments.client_merchant_write')) {
+            throw new ApiException('MERCHANT_MANAGEMENT_DISABLED', 'Merchants are managed by the payment service operator.', 403);
+        }
     }
 
     private function client(Request $request): Client

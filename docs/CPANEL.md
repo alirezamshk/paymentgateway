@@ -147,8 +147,12 @@ php artisan key:generate
 
 * Subdomain layout: `APP_URL=https://pay.example.com` and `SESSION_PATH=/`.
 * `QUEUE_WORK_VIA_SCHEDULER=true` lets cron run the webhook worker (no Supervisor needed).
-* If the site is proxied by Cloudflare (orange cloud), set `TRUSTED_PROXIES=*`, otherwise HTTPS
-  is not detected and API calls fail with `HTTPS_REQUIRED`.
+* If the site is proxied by Cloudflare (orange cloud) and API calls fail with `HTTPS_REQUIRED`,
+  set `TRUSTED_PROXIES` to Cloudflare's IPv4 ranges (check https://www.cloudflare.com/ips/ for the
+  current list), then `php artisan config:cache`:
+  `TRUSTED_PROXIES=173.245.48.0/20,103.21.244.0/22,103.22.200.0/22,103.31.4.0/22,141.101.64.0/18,108.162.192.0/18,190.93.240.0/20,188.114.96.0/20,197.234.240.0/22,198.41.128.0/17,162.158.0.0/15,104.16.0.0/13,104.24.0.0/14,172.64.0.0/13,131.0.72.0/22`
+  Avoid `TRUSTED_PROXIES=*`: anyone reaching the server directly could then forge their IP and
+  bypass the login rate limit.
 
 **Database password** - as **root** (exit the user shell first), generate, set and store it:
 

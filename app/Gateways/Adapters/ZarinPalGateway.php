@@ -38,6 +38,11 @@ class ZarinPalGateway extends AbstractGateway implements SupportsCredentialCheck
 
     public function createPayment(Payment $payment, Merchant $merchant, PaymentAttempt $attempt): GatewayCreateResult
     {
+        // Sandbox "payments" move no money: in production they are allowed for admin tests only.
+        if ($this->setting('sandbox', false) && app()->isProduction() && ! $payment->is_test) {
+            return GatewayCreateResult::failure('SANDBOX_NOT_ALLOWED', 'ZarinPal is in sandbox mode; only admin test payments may use it in production.');
+        }
+
         $request = [
             'merchant_id' => $this->requireCredential($merchant, 'merchant_identifier'),
             'amount' => $payment->amount,
