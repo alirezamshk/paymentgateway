@@ -69,4 +69,12 @@ class PaymentPageController extends Controller
             // domain. Send only the origin, never the payment URL.
             ->header('Referrer-Policy', 'origin');
     }
+
+    /** Where the PSP sends the admin back after a test payment. Shows the outcome only. */
+    public function testResult(string $paymentId): Response
+    {
+        $payment = Payment::with(['merchant', 'provider'])->where('public_id', $paymentId)->where('is_test', true)->firstOrFail();
+
+        return response()->view('pay.test-result', ['payment' => $payment]);
+    }
 }

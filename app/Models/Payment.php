@@ -43,6 +43,7 @@ class Payment extends Model
     {
         return [
             'amount' => 'integer',
+            'is_test' => 'boolean',
             'currency' => Currency::class,
             'status' => PaymentStatus::class,
             'metadata' => 'array',

@@ -21,7 +21,7 @@
                 <td><strong>{{ $m->name }}</strong><div class="muted small mono ltr">{{ $m->public_id }}</div></td><td>{{ $m->provider->name }}</td>
                 <td>@include('admin._status', ['status' => $m->status->value])</td>
                 <td>@if($m->is_default)<span class="badge b-info">{{ __('Default') }}</span>@endif</td>
-                <td class="num"><a class="btn ghost sm" href="{{ route('admin.merchants.edit', $m) }}">{{ __('Edit') }}</a></td>
+                <td class="num"><a class="btn ghost sm" href="{{ route('admin.merchants.edit', $m) }}">{{ __('Edit') }}</a> @include('admin.merchants._test_payment', ['merchant' => $m])</td>
             </tr>
         @empty
             <tr><td colspan="6" class="empty">{{ __('No merchants yet.') }}</td></tr>

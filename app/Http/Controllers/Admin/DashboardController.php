@@ -22,9 +22,9 @@ class DashboardController extends Controller
         return view('admin.dashboard', [
             'clients' => Client::count(),
             'merchants' => Merchant::count(),
-            'paid24h' => Payment::where('status', PaymentStatus::Paid->value)->where('paid_at', '>=', $since)->count(),
+            'paid24h' => Payment::where('status', PaymentStatus::Paid->value)->where('is_test', false)->where('paid_at', '>=', $since)->count(),
             // Rials: IRT amounts × 10.
-            'paidAmount24h' => (int) Payment::where('status', PaymentStatus::Paid->value)->where('paid_at', '>=', $since)
+            'paidAmount24h' => (int) Payment::where('status', PaymentStatus::Paid->value)->where('is_test', false)->where('paid_at', '>=', $since)
                 ->sum(DB::raw("CASE WHEN currency = 'IRT' THEN amount * 10 ELSE amount END")),
             'owed' => (int) LedgerEntry::sum('amount_irr'),
             'failed24h' => Payment::where('status', PaymentStatus::Failed->value)->where('updated_at', '>=', $since)->count(),

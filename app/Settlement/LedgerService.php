@@ -34,7 +34,8 @@ class LedgerService
      */
     public function recordPayment(Payment $payment): void
     {
-        if ($payment->status !== PaymentStatus::Paid) {
+        // Admin test payments are not money owed to the client.
+        if ($payment->status !== PaymentStatus::Paid || $payment->is_test) {
             return;
         }
 
@@ -190,6 +191,7 @@ class LedgerService
 
         Payment::with('client')
             ->where('status', PaymentStatus::Paid->value)
+            ->where('is_test', false)
             ->when($client, fn ($q) => $q->where('client_id', $client->id))
             ->whereNotExists(fn ($q) => $q->selectRaw('1')->from('ledger_entries')
                 ->whereColumn('ledger_entries.payment_id', 'payments.id')

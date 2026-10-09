@@ -117,6 +117,13 @@ This is why the default TTL (60 min) is well above typical PSP session lifetimes
 * Eloquent and the query builder are used throughout (parameterized SQL), with strict
   validation on every input.
 
+## Admin test payments
+
+`PaymentService::createTest()` runs a real PSP round trip through one merchant (disabled ones
+included), flagged `payments.is_test`. Test payments send no webhooks (`WebhookService`), are not
+credited to the ledger and are excluded from the sales report and dashboard totals; the PSP returns
+the admin to `/pay/{id}/test-result`.
+
 ## Removing a merchant
 
 `payments` and `payment_attempts` keep a restricting foreign key to their merchant, so history is

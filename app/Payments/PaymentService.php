@@ -84,6 +84,33 @@ class PaymentService
         return [$payment->refresh(), true];
     }
 
+    /**
+     * Admin test payment through one specific merchant (also a disabled one, to try it before
+     * enabling). Real PSP round trip; no webhooks, no ledger credit, not in reports. The
+     * customer comes back to a result page instead of the client site.
+     */
+    public function createTest(Merchant $merchant, int $amountToman): Payment
+    {
+        $merchant->loadMissing(['client', 'provider']);
+        $data = [
+            'order_id' => 'TEST-'.now('Asia/Tehran')->format('ymdHis').'-'.random_int(100, 999),
+            'amount' => $amountToman,
+            'currency' => 'IRT',
+            'description' => 'Admin test payment',
+        ];
+
+        [$payment, $attempt] = DB::transaction(function () use ($merchant, $data) {
+            [$payment, $attempt] = $this->insertPayment($merchant->client, $merchant, $data, $this->requestHash($data), null, isTest: true);
+            $payment->forceFill(['return_url' => route('pay.test-result', ['payment' => $payment->public_id])])->save();
+
+            return [$payment, $attempt];
+        });
+
+        $this->requestGatewayToken($payment, $attempt, $merchant);
+
+        return $payment->refresh();
+    }
+
     /** @return array{0: Payment, 1: bool} */
     private function handleExistingOrder(Client $client, Payment $existing, array $data, string $hash): array
     {
@@ -152,7 +179,7 @@ class PaymentService
     }
 
     /** @return array{0: Payment, 1: PaymentAttempt} */
-    private function insertPayment(Client $client, Merchant $merchant, array $data, string $hash, ?string $idempotencyKey): array
+    private function insertPayment(Client $client, Merchant $merchant, array $data, string $hash, ?string $idempotencyKey, bool $isTest = false): array
     {
         $payment = new Payment([
             'client_id' => $client->id,
@@ -172,6 +199,7 @@ class PaymentService
             'expires_at' => now()->addMinutes((int) config('payments.payment_ttl_minutes')),
         ]);
         $payment->status = PaymentStatus::Created;
+        $payment->is_test = $isTest;
         $payment->save();
 
         $payment->forceFill([
@@ -180,7 +208,7 @@ class PaymentService
         ])->save();
         $payment->setRelation('client', $client);
 
-        $this->events->record($payment, 'payment.created', 'api', [
+        $this->events->record($payment, 'payment.created', $isTest ? 'admin' : 'api', [
             'order_id' => $payment->order_id,
             'amount' => $payment->amount,
             'currency' => $payment->currency->value,
