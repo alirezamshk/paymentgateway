@@ -57,6 +57,7 @@ class SalesReport
 
         DB::table('payments')
             ->where('status', PaymentStatus::Paid->value)
+            ->where('is_test', false)
             ->where('paid_at', '>=', $fromUtc)
             ->when($clientId, fn ($q) => $q->where('client_id', $clientId))
             ->orderBy('id')
@@ -102,6 +103,7 @@ class SalesReport
 
         $failed = DB::table('payments')
             ->where('status', PaymentStatus::Failed->value)
+            ->where('is_test', false)
             ->where('created_at', '>=', $fromUtc)
             ->when($clientId, fn ($q) => $q->where('client_id', $clientId))
             ->count();

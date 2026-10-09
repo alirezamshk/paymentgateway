@@ -9,6 +9,10 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn () => response()->view('pay.message', ['title' => config('app.name'), 'message' => 'Central payment service.']));
 
+Route::get('pay/{payment}/test-result', [PaymentPageController::class, 'testResult'])
+    ->middleware(['throttle:payment-page', SetAdminLocale::class])
+    ->name('pay.test-result');
+
 Route::get('pay/{payment}', [PaymentPageController::class, 'show'])
     ->middleware('throttle:payment-page')
     ->name('pay.show');
@@ -58,6 +62,7 @@ Route::prefix('admin')->name('admin.')->middleware(SetAdminLocale::class)->group
         Route::post('merchants/{merchant}/toggle', [Admin\MerchantController::class, 'toggle'])->name('merchants.toggle');
         Route::post('merchants/{merchant}/default', [Admin\MerchantController::class, 'makeDefault'])->name('merchants.default');
         Route::delete('merchants/{merchant}', [Admin\MerchantController::class, 'destroy'])->name('merchants.destroy');
+        Route::post('merchants/{merchant}/test-payment', [Admin\MerchantController::class, 'testPayment'])->middleware('throttle:10,1')->name('merchants.test-payment');
         Route::post('merchants/{merchant}/test', [Admin\MerchantController::class, 'test'])->name('merchants.test');
 
         Route::get('payments', [Admin\PaymentController::class, 'index'])->name('payments.index');

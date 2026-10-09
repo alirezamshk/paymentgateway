@@ -64,6 +64,7 @@
                 <td class="num" style="white-space:nowrap">
                     <a class="btn ghost sm" href="{{ route('admin.merchants.edit', $m) }}">{{ __('Edit') }}</a>
                     <form class="inline" method="POST" action="{{ route('admin.merchants.test', $m) }}">@csrf<button class="btn secondary sm">{{ __('Test credentials') }}</button></form>
+                    @include('admin.merchants._test_payment', ['merchant' => $m])
                     @unless($m->is_default)<form class="inline" method="POST" action="{{ route('admin.merchants.default', $m) }}">@csrf<button class="btn secondary sm">{{ __('Make default') }}</button></form>@endunless
                     <form class="inline" method="POST" action="{{ route('admin.merchants.toggle', $m) }}">@csrf<button class="btn secondary sm">{{ $m->isActive() ? __('Disable') : __('Enable') }}</button></form>
                 </td>

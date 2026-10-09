@@ -5,7 +5,7 @@
     <tbody>
     @forelse($payments as $p)
         <tr>
-            <td><a class="mono ltr" href="{{ route('admin.payments.show', $p) }}">{{ \Illuminate\Support\Str::limit($p->public_id, 18) }}</a><div class="muted small ltr">{{ \Illuminate\Support\Str::limit($p->order_id, 24) }}</div></td>
+            <td><a class="mono ltr" href="{{ route('admin.payments.show', $p) }}">{{ \Illuminate\Support\Str::limit($p->public_id, 18) }}</a><div class="muted small ltr">{{ \Illuminate\Support\Str::limit($p->order_id, 24) }}</div>@if($p->is_test)<span class="badge b-warning">{{ __('Admin test') }}</span>@endif</td>
             <td>{{ $p->client?->name }}<div class="muted small">{{ $p->provider?->name }}</div></td>
             <td>@if($p->customer_name || $p->customer_username){{ $p->customer_name ?: $p->customer_username }}@endif<div class="muted small ltr">{{ $p->customer_mobile }}</div></td>
             <td class="num">{{ number_format($p->amount) }} <span class="muted small">{{ __($p->currency->value) }}</span></td>

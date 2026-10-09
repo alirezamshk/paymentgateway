@@ -9,6 +9,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Client;
 use App\Models\GatewayProvider;
 use App\Models\Merchant;
+use App\Payments\PaymentService;
+use App\Services\AuditLogger;
 use App\Services\MerchantService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -95,6 +97,28 @@ class MerchantController extends Controller
         $result = $this->merchants->testCredentials($merchant, 'admin', $request->user()->id);
 
         return back()->with($result->successful ? 'status' : 'error', __($result->message));
+    }
+
+    /**
+     * Real payment through this merchant (it may be disabled), started by the admin to check it
+     * end to end. The admin is sent to the payment page; the PSP returns to a result page.
+     */
+    public function testPayment(Request $request, Merchant $merchant, PaymentService $payments, AuditLogger $audit): RedirectResponse
+    {
+        $min = (int) config('payments.amount_limits.IRT.min');
+        $data = $request->validate(['amount' => ['required', 'integer', 'min:'.$min, 'max:'.(int) config('payments.amount_limits.IRT.max')]]);
+
+        $payment = $payments->createTest($merchant, (int) $data['amount']);
+        $audit->log('admin', $request->user()->id, 'payment.test_created', $merchant->client_id, 'payment', $payment->public_id, [
+            'merchant_id' => $merchant->public_id,
+            'amount_irt' => (int) $data['amount'],
+        ]);
+
+        if (! $payment->status->isPayable()) {
+            return redirect()->route('admin.payments.show', $payment)->with('error', __('The gateway rejected the test payment. See the attempt below for the reason.'));
+        }
+
+        return redirect()->away($payment->payment_url);
     }
 
     private function formData(Merchant $merchant): array

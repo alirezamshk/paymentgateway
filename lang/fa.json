@@ -303,5 +303,14 @@
     "Repeat new password": "تکرار رمز عبور جدید",
     "At least 12 characters.": "حداقل ۱۲ کاراکتر.",
     "The current password is incorrect.": "رمز عبور فعلی اشتباه است.",
-    "Password changed. Other sessions were signed out.": "رمز عبور تغییر کرد. نشست‌های دیگر از حساب خارج شدند."
+    "Password changed. Other sessions were signed out.": "رمز عبور تغییر کرد. نشست‌های دیگر از حساب خارج شدند.",
+    "Test payment": "پرداخت تست",
+    "Test payment result": "نتیجهٔ پرداخت تست",
+    "Admin test": "تست ادمین",
+    "Amount (Toman)": "مبلغ (تومان)",
+    "View in admin panel": "مشاهده در پنل مدیریت",
+    "Pay a small real amount through this merchant. No webhook, not counted in settlements or reports.": "پرداخت واقعی با مبلغ کم از طریق این مرچنت (تومان). وب‌هوکی به سایت نمی‌رود و در تسویه و گزارش‌ها حساب نمی‌شود.",
+    "The gateway rejected the test payment. See the attempt below for the reason.": "درگاه پرداخت تست را نپذیرفت. علت در بخش تلاش‌ها (پایین صفحه) آمده است.",
+    "The payment is being confirmed with the bank. Refresh this page in a moment.": "پرداخت در حال تایید از بانک است. چند لحظه بعد صفحه را تازه کنید.",
+    "This was an admin test: no webhook was sent to the site and it is not counted in settlements or reports.": "این یک پرداخت تست ادمین بود: وب‌هوکی به سایت ارسال نشد و در تسویه حساب و گزارش‌ها حساب نمی‌شود."
 }

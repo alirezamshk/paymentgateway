@@ -22,7 +22,8 @@ class WebhookService
     {
         $client = $payment->client;
 
-        if ($client === null || empty($client->webhook_url)) {
+        // Admin test payments never reach the client site.
+        if ($client === null || empty($client->webhook_url) || $payment->is_test) {
             return null;
         }
 

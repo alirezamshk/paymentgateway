@@ -11,6 +11,7 @@
     <div class="card-head">
         <h2 class="mono ltr">{{ $payment->public_id }}</h2>
         @include('admin._status', ['status' => $payment->status->value])
+        @if($payment->is_test)<span class="badge b-warning">{{ __('Admin test') }}</span>@endif
         <div class="actions"><span class="muted">{{ number_format($payment->amount) }} {{ __($payment->currency->value) }}</span></div>
     </div>
     <div class="card-body">
