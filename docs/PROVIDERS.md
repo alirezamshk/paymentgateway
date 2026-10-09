@@ -94,6 +94,11 @@ curl -sS -m 15 -X POST -d "Amount=10000&callbackURL=https://example.com/&Invoice
   `RefId`, result `GET /v1/TranResult`, verify `POST /v1/Verify`, **settlement
   `POST /v1/Settlement`** (required; retried by `payments:reconcile` if it fails).
 * Amounts in Rials. Settings: `base_url`, `pay_url`.
+* Credentials come from Asan Pardakht's "web service" sheet (MerchantConfigurationId, usr, pwd), not
+  the merchant-portal login. `merchant_identifier` = **MerchantConfigurationId** (not the MerchantId /
+  کد پذیرنده). The `usr` value may contain a space (e.g. `abcd 1234567`); enter it exactly. Wrong values give
+  HTTP 571 / 1001 "Merchant Configuration Not Found" or HTTP 473 / 1002 "Invalid Merchant Username or Password".
+  EncryptionKey/EncryptionVector belong to the legacy SOAP API and are not used.
 
 ## Adding a provider
 
