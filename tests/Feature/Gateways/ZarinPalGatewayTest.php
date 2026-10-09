@@ -67,7 +67,8 @@ class ZarinPalGatewayTest extends GatewayTestCase
         Http::fake([
             'sandbox.zarinpal.com/*' => Http::sequence()
                 ->push(['data' => [], 'errors' => ['code' => -9, 'message' => 'Validation error']], 422)
-                ->push('upstream says no', 502),
+                ->push('upstream says no', 502)
+                ->push('<html><head><title>Error</title><style>body{margin:0}</style></head><body><h2>500 - Internal server error.</h2><h3>There is a problem.</h3></body></html>', 507),
             '*.example.com/*' => Http::response('', 200),
         ]);
 
@@ -80,6 +81,10 @@ class ZarinPalGatewayTest extends GatewayTestCase
         $this->assertSame('GATEWAY_UNAVAILABLE', $second->latestAttempt->error_code);
         // The PSP's answer is kept for diagnosis.
         $this->assertSame(['status' => 502, 'body' => 'upstream says no'], $second->latestAttempt->response_payload);
+
+        // HTML error pages are reduced to their text.
+        $third = $this->createPayment();
+        $this->assertSame(['status' => 507, 'body' => '500 - Internal server error. There is a problem.'], $third->latestAttempt->response_payload);
     }
 
     public function test_mismatched_authority_is_not_verified(): void

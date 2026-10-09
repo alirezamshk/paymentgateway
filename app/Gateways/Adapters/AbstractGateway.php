@@ -45,11 +45,24 @@ abstract class AbstractGateway implements GatewayInterface
             throw new GatewayException(
                 "{$this->code()}: PSP returned HTTP {$response->status()}",
                 (string) $response->status(),
-                response: ['status' => $response->status(), 'body' => mb_substr($response->body(), 0, 500)],
+                response: ['status' => $response->status(), 'body' => mb_substr(self::readableBody($response->body()), 0, 500)],
             );
         }
 
         return $response;
+    }
+
+    /** HTML error pages (e.g. IIS) reduced to their text, so the useful part survives truncation. */
+    private static function readableBody(string $body): string
+    {
+        if (! preg_match('/<\s*(html|body|head)\b/i', $body)) {
+            return $body;
+        }
+
+        $text = (string) preg_replace('#<(style|script|head)\b.*?</\1>#is', ' ', $body);
+        $text = strip_tags(str_replace('<', ' <', $text));
+
+        return trim((string) preg_replace('/\s+/u', ' ', html_entity_decode($text, ENT_QUOTES | ENT_HTML5)));
     }
 
     /** Provider-wide (non-secret) setting from gateway_providers.config. */
