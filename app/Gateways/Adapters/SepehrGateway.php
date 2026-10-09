@@ -10,6 +10,7 @@ use App\Models\Merchant;
 use App\Models\Payment;
 use App\Models\PaymentAttempt;
 use App\Support\SensitiveData;
+use Illuminate\Database\UniqueConstraintViolationException;
 
 /**
  * Sepehr Electronic Payment (Bank Saderat / Mabna) IPG.
@@ -112,11 +113,37 @@ class SepehrGateway extends AbstractGateway
             );
         }
 
+        // The receipt comes from the customer's browser. Bind it to this attempt before advising it,
+        // so a receipt of another (real) payment cannot be replayed here: Advice would answer
+        // "Duplicate" with that payment's amount.
+        $retry = $attempt->psp_receipt === $receipt;
+
+        if (! $retry) {
+            if ($attempt->psp_receipt !== null) {
+                return GatewayVerifyResult::rejected('RECEIPT_MISMATCH', 'A different receipt was already presented for this payment.');
+            }
+
+            try {
+                $attempt->forceFill(['psp_receipt' => $receipt])->save();
+            } catch (UniqueConstraintViolationException) {
+                $attempt->psp_receipt = null; // not ours: must not be saved later with the attempt
+
+                return GatewayVerifyResult::rejected('RECEIPT_REUSED', 'This receipt belongs to another payment.');
+            }
+        }
+
         $request = ['digitalreceipt' => $receipt, 'Tid' => $terminalId];
         $response = $this->send(fn ($http) => $http->asForm()->post($this->apiUrl().'/V1/PeymentApi/Advice', $request));
         $body = $this->normalize($this->json($response));
         $raw = ['request' => $request, 'response' => $body];
         $status = strtolower((string) ($body['status'] ?? ''));
+
+        // "Duplicate" means the receipt was already advised. That is only ours when this attempt
+        // advised it before (a retry after a timeout); otherwise it was confirmed elsewhere,
+        // e.g. by another system sharing the terminal.
+        if ($status === 'duplicate' && ! $retry) {
+            return GatewayVerifyResult::rejected('RECEIPT_REUSED', 'The PSP reports this receipt as already confirmed elsewhere. Manual review required.', $raw);
+        }
 
         if (in_array($status, ['ok', 'duplicate'], true)) {
             if ((int) ($body['returnid'] ?? -1) !== $expectedAmount) {

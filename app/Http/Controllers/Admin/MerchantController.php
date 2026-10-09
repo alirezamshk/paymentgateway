@@ -61,7 +61,9 @@ class MerchantController extends Controller
         try {
             $this->merchants->update($merchant, $this->validated($request, false), 'admin', $request->user()->id);
         } catch (ApiException $e) {
-            return back()->withErrors(['credentials' => __('error.'.$e->errorCode).' '.implode(', ', $e->details['missing'] ?? [])]);
+            $message = $e->errorCode === 'MERCHANT_HAS_OPEN_PAYMENTS' ? $e->getMessage() : __('error.'.$e->errorCode).' '.implode(', ', $e->details['missing'] ?? []);
+
+            return back()->withErrors(['credentials' => $message]);
         }
 
         return redirect()->route('admin.clients.show', $merchant->client)->with('status', __('Merchant updated.'));

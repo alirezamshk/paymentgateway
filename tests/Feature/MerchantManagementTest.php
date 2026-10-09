@@ -2,12 +2,22 @@
 
 namespace Tests\Feature;
 
+use App\Gateways\GatewayManager;
 use App\Models\Merchant;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
+use Tests\Support\FakeGateway;
 use Tests\TestCase;
 
 class MerchantManagementTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+        // Client-side merchant management is opt-in (operator-managed by default).
+        config(['payments.client_merchant_write' => true]);
+    }
+
     public function test_client_creates_merchant_and_credentials_are_never_returned(): void
     {
         $auth = $this->makeClient();
@@ -67,5 +77,34 @@ class MerchantManagementTest extends TestCase
         $this->makeMerchant($auth['client'], 'sepordeh', ['merchant_identifier' => 'k'], default: false);
 
         $this->assertCount(3, $this->signed($auth, 'GET', '/api/v1/merchants')->json('data'));
+    }
+
+    public function test_merchant_writes_are_operator_only_by_default(): void
+    {
+        config(['payments.client_merchant_write' => false]);
+        $auth = $this->makeClient();
+        $merchant = $this->makeMerchant($auth['client'], 'sepehr', ['terminal_identifier' => '11111111']);
+
+        $this->signed($auth, 'POST', '/api/v1/merchants', ['name' => 'Mine', 'provider' => 'sepehr', 'credentials' => ['terminal_identifier' => '99999999']])
+            ->assertStatus(403)->assertJsonPath('error.code', 'MERCHANT_MANAGEMENT_DISABLED');
+        $this->signed($auth, 'PATCH', "/api/v1/merchants/{$merchant->public_id}", ['credentials' => ['terminal_identifier' => '99999999']])
+            ->assertStatus(403);
+        $this->assertSame('11111111', $merchant->fresh()->credential('terminal_identifier'));
+        $this->signed($auth, 'GET', '/api/v1/merchants')->assertOk();
+    }
+
+    public function test_credentials_cannot_change_while_payments_are_open(): void
+    {
+        app(GatewayManager::class)->extend('sandbox', new FakeGateway);
+        Http::fake(['*' => Http::response('', 200)]);
+        $auth = $this->makeClient();
+        $merchant = $this->makeMerchant($auth['client'], 'sandbox', ['merchant_identifier' => 'old']);
+        $this->signed($auth, 'POST', '/api/v1/payments', $this->paymentBody())->assertCreated();
+
+        $this->signed($auth, 'PATCH', "/api/v1/merchants/{$merchant->public_id}", ['credentials' => ['merchant_identifier' => 'new']])
+            ->assertStatus(409)->assertJsonPath('error.code', 'MERCHANT_HAS_OPEN_PAYMENTS');
+        // Renaming is still fine.
+        $this->signed($auth, 'PATCH', "/api/v1/merchants/{$merchant->public_id}", ['name' => 'Renamed'])->assertOk();
+        $this->assertSame('old', $merchant->fresh()->credential('merchant_identifier'));
     }
 }

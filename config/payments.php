@@ -26,6 +26,11 @@ return [
     // Admin panel language: fa (Persian, RTL) or en. The API always answers in English.
     'admin_locale' => env('ADMIN_LOCALE', 'fa'),
 
+    // Allow client sites to create merchants / change merchant credentials through the API.
+    // Off by default: whoever controls a merchant's credentials controls where the money goes,
+    // and the settlement ledger credits every paid payment, so merchants are operator-managed.
+    'client_merchant_write' => (bool) env('PAYMENTS_CLIENT_MERCHANT_WRITE', false),
+
     // Developer documentation at /docs. false = visible to logged-in admins only.
     'public_docs' => (bool) env('PAYMENTS_PUBLIC_DOCS', true),
 
