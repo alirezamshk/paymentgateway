@@ -28,7 +28,6 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->prepend([AssignRequestId::class, ForceHttps::class]);
         $middleware->append(SecurityHeaders::class);
-        $middleware->trustProxies(at: env('TRUSTED_PROXIES') ? explode(',', env('TRUSTED_PROXIES')) : []);
         $middleware->alias([
             'auth.client' => AuthenticateClient::class,
             'admin' => EnsureAdmin::class,

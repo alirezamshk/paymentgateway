@@ -213,6 +213,7 @@ paths:
         | `asanpardakht` | `merchant_identifier` (merchantConfigurationId), `username`, `password` |
         | `sepordeh`     | `merchant_identifier` (merchant key) |
       operationId: createMerchant
+      x-note: Disabled unless the operator sets PAYMENTS_CLIENT_MERCHANT_WRITE=true (403 MERCHANT_MANAGEMENT_DISABLED).
       requestBody:
         required: true
         content:

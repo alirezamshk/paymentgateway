@@ -59,6 +59,7 @@ class PaymentController extends Controller
         $payment = $this->client($request)->payments()
             ->with(['merchant', 'provider'])
             ->where('public_id', $paymentId)
+            ->where('is_test', false)
             ->first();
 
         if ($payment === null) {

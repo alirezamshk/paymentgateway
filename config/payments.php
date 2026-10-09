@@ -26,6 +26,11 @@ return [
     // Admin panel language: fa (Persian, RTL) or en. The API always answers in English.
     'admin_locale' => env('ADMIN_LOCALE', 'fa'),
 
+    // Reverse proxies / CDN in front of the app (comma separated IPs or CIDRs). Read through config
+    // so it still applies after `config:cache`. Prefer the CDN's published ranges over "*":
+    // with "*" anyone reaching the origin directly can forge X-Forwarded-For.
+    'trusted_proxies' => (string) env('TRUSTED_PROXIES', ''),
+
     // Allow client sites to create merchants / change merchant credentials through the API.
     // Off by default: whoever controls a merchant's credentials controls where the money goes,
     // and the settlement ledger credits every paid payment, so merchants are operator-managed.

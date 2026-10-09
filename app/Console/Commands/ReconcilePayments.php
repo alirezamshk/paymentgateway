@@ -7,7 +7,9 @@ use App\Gateways\Contracts\SupportsSettlement;
 use App\Gateways\GatewayManager;
 use App\Models\Payment;
 use App\Payments\VerificationService;
+use App\Support\SensitiveData;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 /**
@@ -39,7 +41,12 @@ class ReconcilePayments extends Command
                 $result = $verification->verify($payment, 'scheduler');
                 $this->line("{$payment->public_id}: {$result->status->value}");
             } catch (Throwable $e) {
-                report($e);
+                // Class + masked message only: traces may carry PSP responses or credentials.
+                Log::error('payments.reconcile_failed', [
+                    'payment_id' => $payment->public_id,
+                    'exception' => $e::class,
+                    'message' => SensitiveData::maskPansInText(mb_substr($e->getMessage(), 0, 300)),
+                ]);
             }
         }
 

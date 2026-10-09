@@ -64,7 +64,7 @@ class SettlementController extends Controller
     public function storePayout(Request $request, Client $client): RedirectResponse
     {
         $data = $request->validate([
-            'amount' => ['required', 'integer', 'min:1'],
+            'amount' => ['required', 'integer', 'min:1', 'max:10000000000000'],
             'unit' => ['required', 'in:irr,toman'],
             'bank_reference' => ['required', 'string', 'max:100'],
             'paid_on' => ['required', 'date', 'before_or_equal:today'],
@@ -86,7 +86,7 @@ class SettlementController extends Controller
     {
         $data = $request->validate([
             'direction' => ['required', 'in:credit,debit'],
-            'amount' => ['required', 'integer', 'min:1'],
+            'amount' => ['required', 'integer', 'min:1', 'max:10000000000000'],
             'unit' => ['required', 'in:irr,toman'],
             'description' => ['required', 'string', 'max:500'],
         ]);
@@ -116,17 +116,23 @@ class SettlementController extends Controller
                         $e->created_at?->setTimezone(Display::TIMEZONE)->format('Y-m-d H:i:s'),
                         $e->type,
                         $e->amount_irr,
-                        $e->description,
+                        self::cell($e->description),
                         $e->payment?->public_id,
-                        $e->payment?->order_id,
-                        $e->payment?->reference_number,
-                        $e->payout?->bank_reference,
+                        self::cell($e->payment?->order_id),
+                        self::cell($e->payment?->reference_number),
+                        self::cell($e->payout?->bank_reference),
                         $e->available_at?->setTimezone(Display::TIMEZONE)->format('Y-m-d H:i:s'),
                     ]);
                 });
 
             fclose($out);
         }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    /** Text that a spreadsheet would run as a formula (= + - @, tab, CR) is prefixed with '. */
+    private static function cell(?string $value): ?string
+    {
+        return $value !== null && $value !== '' && in_array($value[0], ['=', '+', '-', '@', "\t", "\r"], true) ? "'".$value : $value;
     }
 
     /** @return array{0: ?Carbon, 1: ?Carbon} Tehran-day boundaries converted to UTC. */

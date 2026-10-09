@@ -131,5 +131,12 @@ class WebhookDeliveryTest extends TestCase
         $this->assertFalse(WebhookUrlGuard::isAllowed('https://127.0.0.1/hook'));
         $this->assertFalse(WebhookUrlGuard::isAllowed('https://10.0.0.5/hook'));
         $this->assertFalse(WebhookUrlGuard::isAllowed('http://8.8.8.8/hook'));
+        // IPv6 and carrier-grade NAT / special ranges are refused too.
+        $this->assertFalse(WebhookUrlGuard::isAllowed('https://[::1]/hook'));
+        $this->assertFalse(WebhookUrlGuard::isAllowed('https://[fd00::1]/hook'));
+        $this->assertFalse(WebhookUrlGuard::isAllowed('https://100.64.0.1/hook'));
+        $this->assertFalse(WebhookUrlGuard::isAllowed('https://169.254.169.254/latest/meta-data'));
+        // A public address is allowed and pinned.
+        $this->assertSame(['host' => '8.8.8.8', 'port' => 8443, 'ip' => '8.8.8.8'], WebhookUrlGuard::resolve('https://8.8.8.8:8443/hook'));
     }
 }

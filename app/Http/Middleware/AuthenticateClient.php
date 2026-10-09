@@ -38,6 +38,12 @@ class AuthenticateClient
             $this->fail($keyId, 'malformed_headers', 'AUTH_INVALID', 'Authentication headers are malformed.');
         }
 
+        // Form/multipart fields are parsed by PHP but are not part of getContent(), so the body hash
+        // would not cover them. Only JSON (or empty) bodies are accepted.
+        if ($request->getContent() === '' && ($request->request->count() > 0 || $request->files->count() > 0)) {
+            $this->fail($keyId, 'unsigned_body', 'AUTH_INVALID', 'Only JSON request bodies are accepted.');
+        }
+
         $tolerance = (int) config('payments.auth.timestamp_tolerance');
 
         if (abs(time() - (int) $timestamp) > $tolerance) {

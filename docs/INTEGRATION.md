@@ -11,7 +11,7 @@ Full API reference: [`openapi.yaml`](openapi.yaml).
 | Client secret | `tksk_...` | Signing API requests. Shown once. Keep it server-side. |
 | Webhook secret | `whsec_...` | Verifying webhooks from Tech-Kala. Shown once. |
 
-Tech-Kala (or you, via `POST /api/v1/merchants`) configures one or more **merchants** for your
+Tech-Kala configures one or more **merchants** for your
 site, each linked to a PSP (ZarinPal, Sepehr, AsanPardakht, Sepordeh). One merchant is your
 default. You never send PSP credentials when creating a payment, and you never talk to the PSP
 directly.

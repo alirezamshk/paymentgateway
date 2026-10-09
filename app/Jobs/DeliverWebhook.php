@@ -56,12 +56,21 @@ class DeliverWebhook implements ShouldQueue
         $error = null;
 
         try {
-            if (! WebhookUrlGuard::isAllowed($delivery->endpoint)) {
+            $target = WebhookUrlGuard::resolve($delivery->endpoint);
+
+            if ($target === null) {
                 throw new \RuntimeException('Webhook endpoint is not allowed (must be public HTTPS).');
             }
 
+            $options = ['allow_redirects' => false];
+            if ($target['ip'] !== null) {
+                // Connect to the address that was checked (DNS rebinding protection).
+                $ip = str_contains($target['ip'], ':') ? '['.$target['ip'].']' : $target['ip'];
+                $options['curl'] = [CURLOPT_RESOLVE => ["{$target['host']}:{$target['port']}:{$ip}"]];
+            }
+
             $response = Http::timeout(config('payments.webhooks.timeout'))
-                ->withOptions(['allow_redirects' => false])
+                ->withOptions($options)
                 ->withHeaders([
                     'Content-Type' => 'application/json',
                     'User-Agent' => (string) config('payments.webhooks.user_agent'),

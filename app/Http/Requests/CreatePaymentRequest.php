@@ -18,6 +18,7 @@ class CreatePaymentRequest extends FormRequest
     public function rules(): array
     {
         $currency = $this->input('currency', config('payments.default_currency'));
+        $currency = is_string($currency) ? $currency : (string) config('payments.default_currency'); // the 'in' rule rejects it
         $limits = config("payments.amount_limits.{$currency}", ['min' => 1, 'max' => PHP_INT_MAX]);
 
         return [
