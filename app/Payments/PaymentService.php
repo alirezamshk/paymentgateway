@@ -230,7 +230,7 @@ class PaymentService
         try {
             $result = $adapter->createPayment($payment, $merchant, $attempt);
         } catch (GatewayException $e) {
-            $result = GatewayCreateResult::failure('GATEWAY_UNAVAILABLE', $e->getMessage());
+            $result = GatewayCreateResult::failure('GATEWAY_UNAVAILABLE', $e->getMessage(), response: $e->response);
         } catch (ApiException $e) {
             $result = GatewayCreateResult::failure($e->errorCode, $e->getMessage());
         } catch (Throwable $e) {
