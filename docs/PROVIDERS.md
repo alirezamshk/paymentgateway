@@ -83,8 +83,12 @@ curl -sS -m 15 -X POST -d "Amount=10000&callbackURL=https://example.com/&Invoice
   (**Toman**), `callback`, `orderId`, `description` → `information.invoice_id`.
 * Pay `GET .../merchant/invoices/pay/id:{invoice_id}`, or with `{"direct": true}`
   `.../pay/automatic:true/id:{invoice_id}` (skips Sepordeh's own page).
-* Callback `?authority={invoice_id}`; verify `POST .../merchant/invoices/verify` (form):
-  `merchant`, `authority` → `status` 200 + `information.card`.
+* Callback `?authority=...&orderId={our orderId}`. **The authority is not always the invoice_id**
+  (production, 2026-10-12: invoice `…9231360`, callback authority `…2004352`), so the callback is
+  matched by invoice_id or by our `orderId`, and verify uses the returned authority. Each authority
+  is bound to one attempt (`payment_attempts.psp_receipt`), so it cannot be replayed onto another
+  payment. Verify `POST .../merchant/invoices/verify` (form): `merchant`, `authority` → `status`
+  200 + `information.card` (an `orderId`/`amount` in the response, when present, must match).
 * IRR payments are converted to Tomans exactly; an IRR amount not divisible by 10 fails with
   `AMOUNT_NOT_CONVERTIBLE`. Settings: `base_url`, `amount_currency` (default `IRT`), `direct`.
 

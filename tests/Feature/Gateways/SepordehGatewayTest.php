@@ -74,4 +74,72 @@ class SepordehGatewayTest extends GatewayTestCase
         $this->get("/api/v1/gateways/sepordeh/callback/{$payment->public_id}?authority=INV7")->assertRedirectContains('status=paid');
         $this->assertSame('603799******1111', $payment->fresh()->card_mask);
     }
+
+    public function test_callback_with_a_different_authority_is_matched_by_order_id(): void
+    {
+        // Seen in production: the callback authority differs from the invoice_id; orderId is ours.
+        Http::fake([
+            'sepordeh.com/merchant/invoices/add' => Http::response(['status' => 200, 'information' => ['invoice_id' => 876443929231360]]),
+            'sepordeh.com/merchant/invoices/verify' => Http::response(['status' => 200, 'information' => ['amount' => 50000, 'card' => '603799******1234']]),
+            '*.example.com/*' => Http::response('', 200),
+        ]);
+
+        $payment = $this->createPayment(['amount' => 500000, 'currency' => 'IRR']);
+        $orderId = (string) $payment->latestAttempt->psp_invoice_id;
+
+        $this->get("/api/v1/gateways/sepordeh/callback/{$payment->public_id}?authority=876443932004352&orderId={$orderId}")
+            ->assertRedirectContains('status=paid');
+
+        $this->assertStatus($payment, PaymentStatus::Paid);
+        Http::assertSent(fn (Request $r) => str_ends_with($r->url(), 'invoices/verify') && $r['authority'] === '876443932004352');
+    }
+
+    public function test_callback_for_another_order_is_rejected(): void
+    {
+        Http::fake([
+            'sepordeh.com/merchant/invoices/add' => Http::response(['status' => 200, 'information' => ['invoice_id' => 'INV1']]),
+            '*.example.com/*' => Http::response('', 200),
+        ]);
+
+        $payment = $this->createPayment();
+        $this->get("/api/v1/gateways/sepordeh/callback/{$payment->public_id}?authority=OTHER&orderId=123456789012345");
+
+        $this->assertStatus($payment, PaymentStatus::Pending);
+        Http::assertNotSent(fn (Request $r) => str_ends_with($r->url(), 'invoices/verify'));
+    }
+
+    public function test_authority_of_one_payment_cannot_pay_another(): void
+    {
+        Http::fake([
+            'sepordeh.com/merchant/invoices/add' => Http::sequence()
+                ->push(['status' => 200, 'information' => ['invoice_id' => 'INV-A']])
+                ->push(['status' => 200, 'information' => ['invoice_id' => 'INV-B']]),
+            'sepordeh.com/merchant/invoices/verify' => Http::response(['status' => 200, 'information' => ['amount' => 50000]]),
+            '*.example.com/*' => Http::response('', 200),
+        ]);
+
+        $a = $this->createPayment(['amount' => 500000, 'currency' => 'IRR']);
+        $this->get("/api/v1/gateways/sepordeh/callback/{$a->public_id}?authority=PAID-AUTH&orderId={$a->latestAttempt->psp_invoice_id}");
+        $this->assertStatus($a, PaymentStatus::Paid);
+
+        $b = $this->createPayment(['amount' => 500000, 'currency' => 'IRR']);
+        $this->get("/api/v1/gateways/sepordeh/callback/{$b->public_id}?authority=PAID-AUTH&orderId={$b->latestAttempt->psp_invoice_id}");
+        $this->assertStatus($b, PaymentStatus::Failed);
+        $this->assertSame('RECEIPT_REUSED', $b->latestAttempt->fresh()->error_code);
+    }
+
+    public function test_verify_for_another_order_is_rejected(): void
+    {
+        Http::fake([
+            'sepordeh.com/merchant/invoices/add' => Http::response(['status' => 200, 'information' => ['invoice_id' => 'INV5']]),
+            'sepordeh.com/merchant/invoices/verify' => Http::response(['status' => 200, 'information' => ['orderId' => '999', 'amount' => 50000]]),
+            '*.example.com/*' => Http::response('', 200),
+        ]);
+
+        $payment = $this->createPayment(['amount' => 500000, 'currency' => 'IRR']);
+        $this->get("/api/v1/gateways/sepordeh/callback/{$payment->public_id}?authority=INV5");
+
+        $this->assertStatus($payment, PaymentStatus::Failed);
+        $this->assertSame('ORDER_MISMATCH', $payment->latestAttempt->fresh()->error_code);
+    }
 }

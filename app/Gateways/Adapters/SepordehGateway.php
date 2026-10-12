@@ -10,6 +10,7 @@ use App\Models\Merchant;
 use App\Models\Payment;
 use App\Models\PaymentAttempt;
 use App\Support\SensitiveData;
+use Illuminate\Database\UniqueConstraintViolationException;
 
 /**
  * Sepordeh invoice API.
@@ -18,7 +19,10 @@ use App\Support\SensitiveData;
  *           -> {status: 200, information: {invoice_id}}
  *   pay:    GET  {base}/merchant/invoices/pay/id:{invoice_id}
  *           or  {base}/merchant/invoices/pay/automatic:true/id:{invoice_id} ("direct" mode)
- *   return: GET  callback?authority={invoice_id}
+ *   return: GET  callback?authority=...&orderId={our orderId}
+ *           The authority is not always the invoice_id (seen in production 2026-10-12), so the
+ *           callback is matched by invoice_id or by our orderId, and verify uses the returned
+ *           authority. That authority is bound to one attempt (no replay onto another payment).
  *   verify: POST {base}/merchant/invoices/verify  {merchant, authority} -> {status: 200, information: {...}}
  *
  * Credentials: merchant_identifier = Sepordeh merchant key.
@@ -78,14 +82,43 @@ class SepordehGateway extends AbstractGateway
     {
         $authority = (string) ($callbackData['authority'] ?? '');
 
-        return $authority !== '' && $attempt->authority !== null && hash_equals($attempt->authority, $authority);
+        if ($authority === '') {
+            return false;
+        }
+
+        if ($attempt->authority !== null && hash_equals($attempt->authority, $authority)) {
+            return true;
+        }
+
+        // Sepordeh may return an authority other than the invoice_id; it echoes our orderId.
+        $orderId = (string) ($callbackData['orderId'] ?? $callbackData['orderid'] ?? '');
+
+        return $orderId !== '' && hash_equals((string) $attempt->psp_invoice_id, $orderId);
     }
 
     public function verifyPayment(Payment $payment, Merchant $merchant, PaymentAttempt $attempt, array $callbackData): GatewayVerifyResult
     {
+        $authority = (string) ($callbackData['authority'] ?? '') ?: (string) $attempt->authority;
+
+        // The authority comes from the customer's browser: bind it to this attempt so the
+        // authority of another (paid) invoice cannot be replayed onto this payment.
+        if ($attempt->psp_receipt !== $authority) {
+            if ($attempt->psp_receipt !== null) {
+                return GatewayVerifyResult::rejected('RECEIPT_MISMATCH', 'A different authority was already presented for this payment.');
+            }
+
+            try {
+                $attempt->forceFill(['psp_receipt' => $authority])->save();
+            } catch (UniqueConstraintViolationException) {
+                $attempt->psp_receipt = null;
+
+                return GatewayVerifyResult::rejected('RECEIPT_REUSED', 'This authority belongs to another payment.');
+            }
+        }
+
         $request = [
             'merchant' => $this->requireCredential($merchant, 'merchant_identifier'),
-            'authority' => (string) $attempt->authority,
+            'authority' => $authority,
         ];
 
         $response = $this->send(fn ($http) => $http->asForm()->post($this->baseUrl().'/merchant/invoices/verify', $request));
@@ -95,6 +128,11 @@ class SepordehGateway extends AbstractGateway
 
         if ((int) ($body['status'] ?? 0) !== 200) {
             return GatewayVerifyResult::rejected('SEPORDEH_'.($body['status'] ?? $response->status()), (string) ($body['message'] ?? 'Sepordeh verify failed'), $raw);
+        }
+
+        $pspOrderId = $info['orderid'] ?? $info['order_id'] ?? null;
+        if ($pspOrderId !== null && (string) $pspOrderId !== (string) $attempt->psp_invoice_id) {
+            return GatewayVerifyResult::rejected('ORDER_MISMATCH', 'PSP transaction belongs to another order.', $raw);
         }
 
         if (isset($info['amount']) && (int) $info['amount'] !== $this->amountIn($payment, $this->pspCurrency())) {
