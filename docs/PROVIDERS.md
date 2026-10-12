@@ -83,8 +83,12 @@ curl -sS -m 15 -X POST -d "Amount=10000&callbackURL=https://example.com/&Invoice
   (**Toman**), `callback`, `orderId`, `description` → `information.invoice_id`.
 * Pay `GET .../merchant/invoices/pay/id:{invoice_id}`, or with `{"direct": true}`
   `.../pay/automatic:true/id:{invoice_id}` (skips Sepordeh's own page).
-* Callback `?authority={invoice_id}`; verify `POST .../merchant/invoices/verify` (form):
-  `merchant`, `authority` → `status` 200 + `information.card`.
+* Callback `?authority=...&orderId={our orderId}`. **The authority is not always the invoice_id**
+  (production, 2026-10-12: invoice `…9231360`, callback authority `…2004352`), so the callback is
+  matched by invoice_id or by our `orderId`, and verify uses the returned authority. Each authority
+  is bound to one attempt (`payment_attempts.psp_receipt`), so it cannot be replayed onto another
+  payment. Verify `POST .../merchant/invoices/verify` (form): `merchant`, `authority` → `status`
+  200 + `information.card` (an `orderId`/`amount` in the response, when present, must match).
 * IRR payments are converted to Tomans exactly; an IRR amount not divisible by 10 fails with
   `AMOUNT_NOT_CONVERTIBLE`. Settings: `base_url`, `amount_currency` (default `IRT`), `direct`.
 
@@ -94,6 +98,11 @@ curl -sS -m 15 -X POST -d "Amount=10000&callbackURL=https://example.com/&Invoice
   `RefId`, result `GET /v1/TranResult`, verify `POST /v1/Verify`, **settlement
   `POST /v1/Settlement`** (required; retried by `payments:reconcile` if it fails).
 * Amounts in Rials. Settings: `base_url`, `pay_url`.
+* Credentials come from Asan Pardakht's "web service" sheet (MerchantConfigurationId, usr, pwd), not
+  the merchant-portal login. `merchant_identifier` = **MerchantConfigurationId** (not the MerchantId /
+  کد پذیرنده). The `usr` value may contain a space (e.g. `abcd 1234567`); enter it exactly. Wrong values give
+  HTTP 571 / 1001 "Merchant Configuration Not Found" or HTTP 473 / 1002 "Invalid Merchant Username or Password".
+  EncryptionKey/EncryptionVector belong to the legacy SOAP API and are not used.
 
 ## Adding a provider
 
