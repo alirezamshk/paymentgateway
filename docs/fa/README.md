@@ -54,10 +54,10 @@
 
 ## کار با پنل مدیریت
 
-آدرس: `https://tech-kala.com/payment/admin` (زبان پنل با `ADMIN_LOCALE=fa` فارسی است.)
+آدرس: `https://pay.tech-kala.com/admin` (از ۲۸ اکتبر ۲۰۲۶؛ آدرس قدیمی `tech-kala.com/payment/admin` بسته است) (زبان پنل با `ADMIN_LOCALE=fa` فارسی است.)
 
 ### مستندات API برای برنامه‌نویسان
-آدرس `https://tech-kala.com/payment/docs` (منوی **مستندات API** در پنل). دوزبانه است، آدرس، بردارهای تست و
+آدرس `https://pay.tech-kala.com/docs` (منوی **مستندات API** در پنل). دوزبانه است، آدرس، بردارهای تست و
 نمونه‌کدها (PHP، Node.js، Python) برای همین نصب ساخته می‌شوند و فایل OpenAPI هم قابل دانلود است. فقط همین لینک را
 به برنامه‌نویس بدهید (کلیدها جدا و امن). برای محدود کردن به ادمین‌ها: `PAYMENTS_PUBLIC_DOCS=false`.
 

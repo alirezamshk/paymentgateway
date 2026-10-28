@@ -40,8 +40,10 @@ forbids inline JS, so charts are server-rendered SVG with `<title>` tooltips; am
 in `<span class="ltr">` for RTL.
 
 ## Production (as of 2026-10)
-* cPanel, user `techkala`; code in `~/paymentgateway`, served at `https://tech-kala.com/payment`
-  (sub-folder install, `docs/CPANEL.md`). PHP: `/opt/cpanel/ea-php83/root/usr/bin/php`.
+* cPanel, user `techkala`; code in `~/paymentgateway`, served at `https://pay.tech-kala.com`
+  (subdomain, document root `~/paymentgateway/public`, folder group `nobody`; moved from the
+  `tech-kala.com/payment` sub-folder on 2026-10-28 — that path still serves in-flight payments with
+  `/payment/admin` blocked, remove `public_html/payment` once unused). PHP: `/opt/cpanel/ea-php83/root/usr/bin/php`.
   MariaDB; cache/session/queue/nonce on the database; cron runs `schedule:run` with
   `QUEUE_WORK_VIA_SCHEDULER=true`.
 * Server deploys from `main`. Work happens on a feature branch, merged to `main`, then on the
