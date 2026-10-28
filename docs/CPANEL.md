@@ -266,6 +266,29 @@ site's cookies.
    with *"does not resolve to any IP addresses"* until the record exists.
 4. **SSL/TLS Status → Run AutoSSL**.
 
+### Moving an existing sub-directory install to a subdomain
+
+A subdomain is a separate browser origin, so XSS on the main site can no longer drive the admin
+panel. (A separate cPanel account would also isolate the files; that is a larger move.)
+
+1. **Ask each PSP to accept the new domain first** (same server IP): Sepehr checks the referring
+   domain (`UrlReferrer`), ZarinPal / Sepordeh / Asan Pardakht check the callback domain. New
+   payments use the new domain as soon as `APP_URL` changes.
+2. Create the subdomain as above (document root `paymentgateway/public`, PHP 8.3 for it in
+   MultiPHP Manager, DNS-only record, AutoSSL). Check `https://pay.example.com/up` returns 200.
+   MultiPHP may add a handler block to `public/.htaccess`; `git status` then shows it modified -
+   that is expected (`git stash` before a `git pull` if it ever conflicts, `git stash pop` after).
+3. In `.env`: `APP_URL=https://pay.example.com`, `SESSION_PATH=/`, then
+   `php artisan config:cache && php artisan route:cache && php artisan view:cache`.
+   Admins log in again on the new address.
+4. Keep `public_html/payment/` for a few days: payments already in progress return to the old
+   callback URL, and client sites keep working until they change their Base URL (the signed path
+   then loses the `/payment` prefix). Block the admin panel on the old path right away by adding,
+   before the last `RewriteRule` in `public_html/payment/.htaccess`:
+   `RewriteRule ^admin(/.*)?$ - [F,L]`
+5. Clients switch their Base URL to `https://pay.example.com`. When no traffic reaches the old
+   path any more (`grep "/payment/" ~/access-logs/*`), remove `public_html/payment/`.
+
 ### Check
 
 ```bash
