@@ -276,6 +276,16 @@ panel. (A separate cPanel account would also isolate the files; that is a larger
    payments use the new domain as soon as `APP_URL` changes.
 2. Create the subdomain as above (document root `paymentgateway/public`, PHP 8.3 for it in
    MultiPHP Manager, DNS-only record, AutoSSL). Check `https://pay.example.com/up` returns 200.
+   Pitfalls met in production (all as root unless noted):
+   * WHM *Tweak Settings → Restrict document roots to public_html* (`publichtmlsubsonly`) is on by
+     default and silently turns the path into `public_html/paymentgateway/public`. Turn it off
+     (`whmapi1 set_tweaksetting key=publichtmlsubsonly value=0`), then as the user:
+     `uapi SubDomain changedocroot domain=pay.example.com docroot=paymentgateway/public`.
+   * The web server runs as `nobody` and must be able to enter the project folder:
+     `chgrp nobody ~USER/paymentgateway && chmod 750 ~USER/paymentgateway` (files such as `.env`
+     stay 600). Otherwise LiteSpeed/Apache answers 404.
+   * `/scripts/rebuildhttpdconf && /usr/local/lsws/bin/lswsctrl restart` after changing the
+     document root (`lswsctrl` only works as root).
    MultiPHP may add a handler block to `public/.htaccess`; `git status` then shows it modified -
    that is expected (`git stash` before a `git pull` if it ever conflicts, `git stash pop` after).
 3. In `.env`: `APP_URL=https://pay.example.com`, `SESSION_PATH=/`, then
